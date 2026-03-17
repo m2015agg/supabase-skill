@@ -86,6 +86,9 @@ Next time Claude Code (or Codex, Cursor, etc.) opens your project, it reads the 
 | `supabase-skill install` | Global setup wizard (CLI check, env tagging, CLAUDE.md) |
 | `supabase-skill init` | Per-project setup (CLAUDE.md + .env + .gitignore) |
 | `supabase-skill snapshot` | Snapshot DB schema to `.supabase-schema/` for fast agent lookups |
+| `supabase-skill context <query>` | Full context: columns, FKs, related tables (2 levels), related functions |
+| `supabase-skill table <name>` | Single table detail with relationships, functions, related summaries |
+| `supabase-skill columns [name]` | Search columns by name, `--type`, `--fk`, `--pk`, `--table` |
 | `supabase-skill search <query>` | Search tables, columns, functions, and FKs locally |
 | `supabase-skill docs` | Output the skill doc to stdout |
 | `supabase-skill docs --format <fmt>` | Output as `claude`, `agents`, `cursor`, `skill`, or `raw` |
@@ -201,6 +204,65 @@ supabase-skill search episode
 
 # JSON output for programmatic use
 supabase-skill search subscription --json
+```
+
+### Context — The Smart Query (Like CodeGraph's `codegraph_context`)
+
+```bash
+# "What's the full picture for episodes?"
+supabase-skill context episodes
+```
+
+Returns everything in one shot:
+- Full column listing with types, PKs, FKs, defaults
+- All related tables (2 levels deep via FK chains)
+- Which direction: "references" vs "referenced by"
+- Related RPC functions
+- Column notes/descriptions
+
+```bash
+# Deeper FK traversal
+supabase-skill context episodes --depth 3
+
+# Topic-based (matches any table/column containing the term)
+supabase-skill context subscription
+supabase-skill context chat
+```
+
+### Table — Single Table Deep Dive
+
+```bash
+supabase-skill table subscriptions
+```
+
+Returns the full table file plus:
+- Outgoing FKs ("this table references")
+- Incoming FKs ("referenced by")
+- Related RPC functions (name-matched)
+- Related table summaries (column counts for each FK target)
+
+### Columns — Cross-Database Column Search
+
+Stop running `SELECT column_name FROM information_schema.columns WHERE...` every time.
+
+```bash
+# Find all jsonb columns across the entire database
+supabase-skill columns --type jsonb
+
+# All foreign key columns in episode-related tables
+supabase-skill columns --fk --table episode
+
+# All primary keys
+supabase-skill columns --pk
+
+# All NOT NULL columns with defaults
+supabase-skill columns --not-null --has-default
+
+# Find all "status" columns and their types
+supabase-skill columns status
+
+# Combine: all uuid columns that are foreign keys
+supabase-skill columns --type uuid --fk
 ```
 
 ### How Agents Use It

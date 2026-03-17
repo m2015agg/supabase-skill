@@ -100,9 +100,17 @@ ${envSection}
 - \`supabase-skill docs --format claude\` — CLAUDE.md format
 - \`supabase-skill envs\` — list configured environments
 
-### Schema Snapshot (local DB map — use instead of querying information_schema)
+### Schema Snapshot (local DB map — use INSTEAD of querying information_schema)
+If \`.supabase-schema/\` exists, ALWAYS use these commands instead of running SQL to explore the schema:
 - \`supabase-skill snapshot\` — snapshot schema to .supabase-schema/ (tables, columns, FKs, functions)
 - \`supabase-skill snapshot --project-ref <ref>\` — snapshot a specific environment
+- \`supabase-skill context <table-or-topic>\` — get full context: columns, FKs, related tables (2 levels deep), related functions
+- \`supabase-skill context <topic> --depth 3\` — deeper FK traversal
+- \`supabase-skill table <name>\` — full single-table detail with relationships, functions, related table summaries
+- \`supabase-skill columns --type <type>\` — find all columns of a type (uuid, jsonb, text, timestamp, etc.)
+- \`supabase-skill columns --fk\` — find all foreign key columns
+- \`supabase-skill columns --table <name>\` — filter columns to specific table
+- \`supabase-skill columns <name> --type jsonb\` — combine name + type filters
 - \`supabase-skill search <query>\` — search tables, columns, functions, and relationships
 - \`supabase-skill search <query> --json\` — structured JSON output
 - Read \`.supabase-schema/tables/<name>.md\` — full table schema (columns, types, PKs, FKs, defaults)

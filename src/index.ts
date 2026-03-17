@@ -7,6 +7,9 @@ import { uninstallCommand } from "./commands/uninstall.js";
 import { envsCommand } from "./commands/envs.js";
 import { snapshotCommand } from "./commands/snapshot.js";
 import { searchCommand } from "./commands/search.js";
+import { contextCommand } from "./commands/context.js";
+import { columnsCommand } from "./commands/columns.js";
+import { tableCommand } from "./commands/table.js";
 
 const program = new Command();
 
@@ -22,5 +25,8 @@ program.addCommand(uninstallCommand());
 program.addCommand(envsCommand());
 program.addCommand(snapshotCommand());
 program.addCommand(searchCommand());
+program.addCommand(contextCommand());
+program.addCommand(columnsCommand());
+program.addCommand(tableCommand());
 
 program.parse();
