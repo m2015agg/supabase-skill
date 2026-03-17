@@ -3,6 +3,10 @@ import { execSync } from "node:child_process";
 import { join } from "node:path";
 import { mkdirSync, writeFileSync, existsSync, rmSync } from "node:fs";
 import { readConfig } from "../util/config.js";
+import {
+  openDb, initSchema, clearData, insertAll,
+  type TableRow, type ColumnRow, type RelRow, type FuncRow,
+} from "../util/db.js";
 
 interface ColumnDef {
   description?: string;
@@ -311,6 +315,94 @@ export function snapshotCommand(): Command {
       write("  Generating functions... ");
       writeFileSync(join(outDir, "functions.md"), generateFunctionsMarkdown(spec.paths));
       write(`\u2713 ${rpcs.length} RPCs\n`);
+
+      // ─── SQLite Database ───
+      write("  Writing SQLite database... ");
+      try {
+        const db = openDb(outDir);
+        initSchema(db);
+        clearData(db);
+
+        // Build structured data from OpenAPI spec
+        const dbTables: TableRow[] = [];
+        const dbColumns: ColumnRow[] = [];
+        const dbRels: RelRow[] = [];
+
+        for (const name of allNames) {
+          const def = spec.definitions[name];
+          if (!def) continue;
+          const required = new Set(def.required || []);
+          const isView = name.startsWith("v_");
+
+          let pkCount = 0;
+          let fkCount = 0;
+          const colCount = Object.keys(def.properties).length;
+
+          for (const [colName, col] of Object.entries(def.properties)) {
+            const pk = isPrimaryKey(col.description);
+            const fk = parseForeignKeys(col.description);
+            if (pk) pkCount++;
+            if (fk) fkCount++;
+
+            // Clean description
+            let desc: string | null = null;
+            if (col.description && !col.description.match(/^Note:\n/)) {
+              desc = col.description
+                .replace(/\n\nNote:\n.*$/s, "")
+                .replace(/<[^>]+>/g, "")
+                .trim() || null;
+            }
+
+            dbColumns.push({
+              table_name: name,
+              name: colName,
+              type: col.format || col.type || null,
+              nullable: !required.has(colName),
+              default_value: col.default || null,
+              is_pk: pk,
+              fk_table: fk?.table || null,
+              fk_column: fk?.column || null,
+              description: desc,
+            });
+
+            if (fk) {
+              dbRels.push({
+                from_table: name,
+                from_column: colName,
+                to_table: fk.table,
+                to_column: fk.column,
+              });
+            }
+          }
+
+          dbTables.push({ name, column_count: colCount, pk_count: pkCount, fk_count: fkCount, is_view: isView });
+        }
+
+        // Build function data
+        const dbFuncs: FuncRow[] = [];
+        const rpcPaths = Object.entries(spec.paths).filter(([p]) => p.startsWith("/rpc/"));
+        for (const [path, endpoint] of rpcPaths) {
+          const funcName = path.replace("/rpc/", "");
+          const post = endpoint.post;
+          const params = post?.parameters?.filter((p) => p.in === "body") || [];
+          let paramsJson = "[]";
+          if (params.length > 0 && params[0].schema?.properties) {
+            const props = params[0].schema.properties as Record<string, { type?: string; format?: string }>;
+            paramsJson = JSON.stringify(
+              Object.entries(props).map(([n, d]) => ({ name: n, type: d.format || d.type || "unknown" })),
+            );
+          }
+          dbFuncs.push({ name: funcName, params: paramsJson, description: post?.description || null });
+        }
+
+        insertAll(db, dbTables, dbColumns, dbRels, dbFuncs);
+        db.close();
+        write("\u2713\n");
+      } catch (e) {
+        const err = e as Error;
+        write(`FAILED (${err.message}) — markdown files still available\n`);
+        if (err.stack) write(`  ${err.stack.split("\n").slice(1, 3).join("\n  ")}\n`);
+      }
 
       write(`\n  Schema snapshot saved to ${opts.output}/\n`);
       write(`  ${tables.length} tables, ${views.length} views, ${rpcs.length} functions, ${Object.keys(rels).length} FKs\n`);

@@ -1,15 +1,16 @@
 import { Command } from "commander";
 import { join } from "node:path";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
+import {
+  hasDb, openDb, getTableColumns, getRelatedTables, findMatchingFunctions,
+  getAllTableNames, type ColumnQueryResult,
+} from "../util/db.js";
 
 function write(msg: string): void {
   process.stdout.write(msg);
 }
 
-interface Relationship {
-  from: string;
-  to: string;
-}
+// ─── Markdown Fallback (original implementation) ───
 
 interface ColumnInfo {
   name: string;
@@ -27,24 +28,15 @@ function parseTableFile(filePath: string): { columns: ColumnInfo[]; notes: strin
   let inNotes = false;
 
   for (const line of content.split("\n")) {
-    if (line.startsWith("## Notes")) {
-      inNotes = true;
-      continue;
-    }
-    if (inNotes && line.startsWith("- ")) {
-      notes.push(line);
-      continue;
-    }
+    if (line.startsWith("## Notes")) { inNotes = true; continue; }
+    if (inNotes && line.startsWith("- ")) { notes.push(line); continue; }
     if (line.startsWith("|") && !line.startsWith("| Column") && !line.startsWith("|---")) {
       const cols = line.split("|").slice(1, -1).map((c) => c.trim());
       if (cols.length >= 5) {
         columns.push({
           name: cols[0].replace(/\s*\*\*PK\*\*/, ""),
-          type: cols[1],
-          nullable: cols[2],
-          defaultVal: cols[3],
-          fk: cols[4],
-          isPk: cols[0].includes("**PK**"),
+          type: cols[1], nullable: cols[2], defaultVal: cols[3],
+          fk: cols[4], isPk: cols[0].includes("**PK**"),
         });
       }
     }
@@ -52,79 +44,195 @@ function parseTableFile(filePath: string): { columns: ColumnInfo[]; notes: strin
   return { columns, notes };
 }
 
-function loadRelationships(schemaDir: string): Relationship[] {
+// ─── SQLite Path ───
+
+function renderColumnsFromDb(cols: ColumnQueryResult[]): void {
+  const pkCount = cols.filter((c) => c.is_pk).length;
+  const fkCount = cols.filter((c) => c.fk_table).length;
+  write(`${cols.length} columns | ${pkCount} PK | ${fkCount} FK\n\n`);
+
+  write("| Column | Type | Nullable | Default | FK |\n");
+  write("|--------|------|----------|---------|----|");
+  for (const col of cols) {
+    const pk = col.is_pk ? " **PK**" : "";
+    const nullable = col.nullable ? "nullable" : "NOT NULL";
+    const fk = col.fk_table ? `→ ${col.fk_table}.${col.fk_column}` : "";
+    write(`\n| ${col.name}${pk} | ${col.type || "unknown"} | ${nullable} | ${col.default_value || ""} | ${fk} |`);
+  }
+  write("\n\n");
+
+  const notes = cols.filter((c) => c.description);
+  if (notes.length > 0) {
+    for (const col of notes) {
+      write(`- **${col.name}**: ${col.description}\n`);
+    }
+    write("\n");
+  }
+}
+
+function runSqlite(schemaDir: string, query: string, depth: number, jsonMode: boolean): void {
+  const db = openDb(schemaDir);
+  const q = query.toLowerCase();
+
+  const allTables = getAllTableNames(db);
+  let entryTables = allTables.filter((t) => t === q);
+  if (entryTables.length === 0) entryTables = allTables.filter((t) => t.includes(q));
+  if (entryTables.length === 0) {
+    // Search by column name
+    const colMatches = db.prepare("SELECT DISTINCT table_name FROM columns WHERE name LIKE ?").all(`%${q}%`) as Array<{ table_name: string }>;
+    entryTables = colMatches.map((r) => r.table_name);
+  }
+
+  const matchingFuncs = findMatchingFunctions(db, q);
+
+  if (jsonMode) {
+    const result = entryTables.slice(0, 5).map((table) => ({
+      name: table,
+      columns: getTableColumns(db, table),
+      related: getRelatedTables(db, table, depth),
+    }));
+    db.close();
+    write(JSON.stringify({ entryTables: result, functions: matchingFuncs }, null, 2) + "\n");
+    return;
+  }
+
+  if (entryTables.length === 0 && matchingFuncs.length === 0) {
+    db.close();
+    write(`No tables or columns match "${query}"\n`);
+    return;
+  }
+
+  write(`\n# Context for "${query}"\n\n`);
+
+  for (const table of entryTables.slice(0, 5)) {
+    const cols = getTableColumns(db, table);
+    const related = getRelatedTables(db, table, depth);
+
+    write(`## ${table}\n`);
+    renderColumnsFromDb(cols);
+
+    const refs = related.filter((r) => r.direction === "references");
+    const refBy = related.filter((r) => r.direction === "referenced by");
+
+    if (refs.length > 0 || refBy.length > 0) {
+      write("### Related Tables\n\n");
+      if (refs.length > 0) {
+        write("**References (this table points to):**\n");
+        for (const r of refs) write(`  → ${r.table_name} via ${r.from_column} → ${r.table_name}.${r.to_column}\n`);
+        write("\n");
+      }
+      if (refBy.length > 0) {
+        write("**Referenced by (points to this table):**\n");
+        for (const r of refBy) write(`  ← ${r.table_name} via ${r.table_name}.${r.from_column} → ${r.to_column}\n`);
+        write("\n");
+      }
+    }
+    write("---\n\n");
+  }
+
+  if (entryTables.length > 5) write(`... and ${entryTables.length - 5} more matching tables\n\n`);
+
+  if (matchingFuncs.length > 0) {
+    write("## Related Functions\n\n");
+    for (const func of matchingFuncs) {
+      const params = JSON.parse(func.params || "[]") as Array<{ name: string; type: string }>;
+      const paramStr = params.length > 0 ? `(${params.map((p) => `${p.name}`).join(", ")})` : "()";
+      write(`- \`${func.name}${paramStr}\`\n`);
+    }
+    write("\n");
+  }
+
+  db.close();
+}
+
+// ─── Markdown Fallback Path ───
+
+function runMarkdown(schemaDir: string, query: string, depth: number, jsonMode: boolean): void {
+  const tablesDir = join(schemaDir, "tables");
+  const allTables = readdirSync(tablesDir).filter((f) => f.endsWith(".md")).map((f) => f.replace(".md", ""));
+  const q = query.toLowerCase();
+
+  let entryTables = allTables.filter((t) => t === q);
+  if (entryTables.length === 0) entryTables = allTables.filter((t) => t.includes(q));
+  if (entryTables.length === 0) {
+    for (const table of allTables) {
+      const { columns } = parseTableFile(join(tablesDir, `${table}.md`));
+      if (columns.some((c) => c.name.toLowerCase().includes(q))) entryTables.push(table);
+    }
+  }
+
+  // Load relationships
   const relsFile = join(schemaDir, "relationships.json");
-  if (!existsSync(relsFile)) return [];
-  const rels = JSON.parse(readFileSync(relsFile, "utf-8")) as Record<string, string>;
-  return Object.entries(rels).map(([from, to]) => ({ from, to }));
-}
+  const rels = existsSync(relsFile) ? JSON.parse(readFileSync(relsFile, "utf-8")) as Record<string, string> : {};
 
-function loadFunctions(schemaDir: string): Array<{ name: string; params: string[] }> {
+  // Load functions
   const funcsFile = join(schemaDir, "functions.md");
-  if (!existsSync(funcsFile)) return [];
-  const content = readFileSync(funcsFile, "utf-8");
-  const funcs: Array<{ name: string; params: string[] }> = [];
-  let currentFunc = "";
-  let currentParams: string[] = [];
-
-  for (const line of content.split("\n")) {
-    if (line.startsWith("## ")) {
-      if (currentFunc) funcs.push({ name: currentFunc, params: currentParams });
-      currentFunc = line.replace("## ", "");
-      currentParams = [];
-    } else if (line.startsWith("- `") && currentFunc) {
-      currentParams.push(line.replace("- `", "").replace(/`.*/, ""));
-    }
-  }
-  if (currentFunc) funcs.push({ name: currentFunc, params: currentParams });
-  return funcs;
-}
-
-function getRelatedTables(
-  tableName: string,
-  rels: Relationship[],
-  depth: number,
-  visited: Set<string>,
-): Map<string, { direction: string; via: string; depth: number }> {
-  const related = new Map<string, { direction: string; via: string; depth: number }>();
-  if (depth <= 0) return related;
-
-  for (const rel of rels) {
-    const [fromTable, fromCol] = rel.from.split(".");
-    const [toTable, toCol] = rel.to.split(".");
-
-    if (fromTable === tableName && !visited.has(toTable)) {
-      related.set(toTable, {
-        direction: "references",
-        via: `${fromCol} → ${toTable}.${toCol}`,
-        depth,
-      });
-      visited.add(toTable);
-      if (depth > 1) {
-        const deeper = getRelatedTables(toTable, rels, depth - 1, visited);
-        for (const [k, v] of deeper) {
-          if (!related.has(k)) related.set(k, v);
-        }
-      }
-    }
-
-    if (toTable === tableName && !visited.has(fromTable)) {
-      related.set(fromTable, {
-        direction: "referenced by",
-        via: `${fromTable}.${fromCol} → ${toCol}`,
-        depth,
-      });
-      visited.add(fromTable);
-      if (depth > 1) {
-        const deeper = getRelatedTables(fromTable, rels, depth - 1, visited);
-        for (const [k, v] of deeper) {
-          if (!related.has(k)) related.set(k, v);
-        }
+  const matchingFuncs: string[] = [];
+  if (existsSync(funcsFile)) {
+    for (const line of readFileSync(funcsFile, "utf-8").split("\n")) {
+      if (line.startsWith("## ") && line.toLowerCase().includes(q)) {
+        matchingFuncs.push(line.replace("## ", ""));
       }
     }
   }
 
-  return related;
+  if (jsonMode) {
+    const result = entryTables.slice(0, 5).map((table) => {
+      const { columns, notes } = parseTableFile(join(tablesDir, `${table}.md`));
+      return { name: table, columns, notes };
+    });
+    write(JSON.stringify({ entryTables: result, functions: matchingFuncs }, null, 2) + "\n");
+    return;
+  }
+
+  if (entryTables.length === 0 && matchingFuncs.length === 0) {
+    write(`No tables or columns match "${query}"\n`);
+    return;
+  }
+
+  write(`\n# Context for "${query}"\n\n`);
+
+  for (const table of entryTables.slice(0, 5)) {
+    const { columns, notes } = parseTableFile(join(tablesDir, `${table}.md`));
+    write(`## ${table}\n`);
+    write(`${columns.length} columns | ${columns.filter((c) => c.isPk).length} PK | ${columns.filter((c) => c.fk).length} FK\n\n`);
+
+    write("| Column | Type | Nullable | Default | FK |\n");
+    write("|--------|------|----------|---------|----|");
+    for (const col of columns) {
+      const pk = col.isPk ? " **PK**" : "";
+      write(`\n| ${col.name}${pk} | ${col.type} | ${col.nullable} | ${col.defaultVal} | ${col.fk} |`);
+    }
+    write("\n\n");
+
+    if (notes.length > 0) {
+      for (const note of notes) write(`${note}\n`);
+      write("\n");
+    }
+
+    // Find related tables via relationships
+    const outgoing: string[] = [];
+    const incoming: string[] = [];
+    for (const [from, to] of Object.entries(rels)) {
+      const [fromTable] = from.split(".");
+      const [toTable] = to.split(".");
+      if (fromTable === table) outgoing.push(`  → ${toTable} via ${from.split(".")[1]} → ${to}`);
+      if (toTable === table) incoming.push(`  ← ${fromTable} via ${from}`);
+    }
+
+    if (outgoing.length > 0 || incoming.length > 0) {
+      write("### Related Tables\n\n");
+      if (outgoing.length > 0) { write("**References (this table points to):**\n"); outgoing.forEach((r) => write(r + "\n")); write("\n"); }
+      if (incoming.length > 0) { write("**Referenced by (points to this table):**\n"); incoming.forEach((r) => write(r + "\n")); write("\n"); }
+    }
+    write("---\n\n");
+  }
+
+  if (matchingFuncs.length > 0) {
+    write("## Related Functions\n\n");
+    for (const func of matchingFuncs) write(`- \`${func}\`\n`);
+    write("\n");
+  }
 }
 
 export function contextCommand(): Command {
@@ -144,137 +252,10 @@ export function contextCommand(): Command {
         process.exit(1);
       }
 
-      const tablesDir = join(schemaDir, "tables");
-      const allTables = readdirSync(tablesDir).filter((f) => f.endsWith(".md")).map((f) => f.replace(".md", ""));
-      const rels = loadRelationships(schemaDir);
-      const funcs = loadFunctions(schemaDir);
-      const q = query.toLowerCase();
-
-      // Find matching tables (exact match first, then fuzzy)
-      let entryTables: string[] = [];
-      const exactMatch = allTables.find((t) => t === q);
-      if (exactMatch) {
-        entryTables = [exactMatch];
+      if (hasDb(schemaDir)) {
+        runSqlite(schemaDir, query, depth, !!opts.json);
       } else {
-        entryTables = allTables.filter((t) => t.toLowerCase().includes(q));
-      }
-
-      if (entryTables.length === 0) {
-        // Try matching by column names
-        for (const table of allTables) {
-          const { columns } = parseTableFile(join(tablesDir, `${table}.md`));
-          if (columns.some((c) => c.name.toLowerCase().includes(q))) {
-            entryTables.push(table);
-          }
-        }
-      }
-
-      if (entryTables.length === 0) {
-        write(`No tables or columns match "${query}"\n`);
-        return;
-      }
-
-      // Find related functions
-      const matchingFuncs = funcs.filter((f) =>
-        f.name.toLowerCase().includes(q) ||
-        f.params.some((p) => p.toLowerCase().includes(q)),
-      );
-
-      if (opts.json) {
-        const result: Record<string, unknown> = { entryTables: [] };
-        const tableResults: unknown[] = [];
-
-        for (const table of entryTables.slice(0, 5)) {
-          const { columns, notes } = parseTableFile(join(tablesDir, `${table}.md`));
-          const visited = new Set([table]);
-          const related = getRelatedTables(table, rels, depth, visited);
-          tableResults.push({
-            name: table,
-            columns,
-            notes,
-            related: Object.fromEntries(
-              [...related.entries()].map(([k, v]) => [k, v]),
-            ),
-          });
-        }
-        result.entryTables = tableResults;
-        result.functions = matchingFuncs;
-        write(JSON.stringify(result, null, 2) + "\n");
-        return;
-      }
-
-      // Pretty output
-      write(`\n# Context for "${query}"\n\n`);
-
-      for (const table of entryTables.slice(0, 5)) {
-        const filePath = join(tablesDir, `${table}.md`);
-        const { columns, notes } = parseTableFile(filePath);
-        const visited = new Set([table]);
-        const related = getRelatedTables(table, rels, depth, visited);
-
-        // Table header
-        const pkCount = columns.filter((c) => c.isPk).length;
-        const fkCount = columns.filter((c) => c.fk).length;
-        write(`## ${table}\n`);
-        write(`${columns.length} columns | ${pkCount} PK | ${fkCount} FK\n\n`);
-
-        // Columns
-        write("| Column | Type | Nullable | Default | FK |\n");
-        write("|--------|------|----------|---------|----|\n");
-        for (const col of columns) {
-          const pk = col.isPk ? " **PK**" : "";
-          write(`| ${col.name}${pk} | ${col.type} | ${col.nullable} | ${col.defaultVal} | ${col.fk} |\n`);
-        }
-        write("\n");
-
-        // Notes
-        if (notes.length > 0) {
-          for (const note of notes) {
-            write(`${note}\n`);
-          }
-          write("\n");
-        }
-
-        // Related tables
-        if (related.size > 0) {
-          write("### Related Tables\n\n");
-
-          // Group by direction
-          const refs = [...related.entries()].filter(([, v]) => v.direction === "references");
-          const refBy = [...related.entries()].filter(([, v]) => v.direction === "referenced by");
-
-          if (refs.length > 0) {
-            write("**References (this table points to):**\n");
-            for (const [name, info] of refs) {
-              write(`  → ${name} via ${info.via}\n`);
-            }
-            write("\n");
-          }
-
-          if (refBy.length > 0) {
-            write("**Referenced by (points to this table):**\n");
-            for (const [name, info] of refBy) {
-              write(`  ← ${name} via ${info.via}\n`);
-            }
-            write("\n");
-          }
-        }
-
-        write("---\n\n");
-      }
-
-      if (entryTables.length > 5) {
-        write(`... and ${entryTables.length - 5} more matching tables\n\n`);
-      }
-
-      // Related functions
-      if (matchingFuncs.length > 0) {
-        write("## Related Functions\n\n");
-        for (const func of matchingFuncs) {
-          const paramStr = func.params.length > 0 ? `(${func.params.join(", ")})` : "()";
-          write(`- \`${func.name}${paramStr}\`\n`);
-        }
-        write("\n");
+        runMarkdown(schemaDir, query, depth, !!opts.json);
       }
     });
 }

@@ -1,14 +1,86 @@
 import { Command } from "commander";
 import { join } from "node:path";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { hasDb, openDb, searchFTS } from "../util/db.js";
 
 function write(msg: string): void {
   process.stdout.write(msg);
 }
 
+interface SearchResult {
+  type: string;
+  name: string;
+  match: string;
+  file: string;
+}
+
+function searchSqlite(schemaDir: string, query: string): SearchResult[] {
+  const db = openDb(schemaDir);
+  const ftsResults = searchFTS(db, query);
+  db.close();
+
+  return ftsResults.map((r) => ({
+    type: r.type,
+    name: r.parent ? `${r.parent}.${r.name}` : r.name,
+    match: r.detail || "name",
+    file: r.type === "column" ? `tables/${r.parent}.md` : r.type === "table" ? `tables/${r.name}.md` : "functions.md",
+  }));
+}
+
+function searchMarkdown(schemaDir: string, query: string): SearchResult[] {
+  const q = query.toLowerCase();
+  const results: SearchResult[] = [];
+
+  const tablesDir = join(schemaDir, "tables");
+  if (existsSync(tablesDir)) {
+    const files = readdirSync(tablesDir).filter((f) => f.endsWith(".md"));
+    for (const file of files) {
+      const tableName = file.replace(".md", "");
+      const content = readFileSync(join(tablesDir, file), "utf-8");
+
+      if (tableName.toLowerCase().includes(q)) {
+        results.push({ type: "table", name: tableName, match: "name", file: `tables/${file}` });
+      }
+
+      for (const line of content.split("\n")) {
+        if (line.startsWith("|") && !line.startsWith("| Column") && !line.startsWith("|---")) {
+          const cols = line.split("|").slice(1, -1).map((c) => c.trim());
+          if (cols.length > 0) {
+            const colName = cols[0].replace(/\s*\*\*PK\*\*/, "");
+            if (colName.toLowerCase().includes(q)) {
+              results.push({ type: "column", name: `${tableName}.${colName}`, match: cols[1] || "", file: `tables/${file}` });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const funcsFile = join(schemaDir, "functions.md");
+  if (existsSync(funcsFile)) {
+    for (const line of readFileSync(funcsFile, "utf-8").split("\n")) {
+      if (line.startsWith("## ") && line.toLowerCase().includes(q)) {
+        results.push({ type: "function", name: line.replace("## ", ""), match: "name", file: "functions.md" });
+      }
+    }
+  }
+
+  const relsFile = join(schemaDir, "relationships.json");
+  if (existsSync(relsFile)) {
+    const rels = JSON.parse(readFileSync(relsFile, "utf-8")) as Record<string, string>;
+    for (const [from, to] of Object.entries(rels)) {
+      if (from.toLowerCase().includes(q) || to.toLowerCase().includes(q)) {
+        results.push({ type: "fk", name: `${from} → ${to}`, match: "relationship", file: "relationships.json" });
+      }
+    }
+  }
+
+  return results;
+}
+
 export function searchCommand(): Command {
   return new Command("search")
-    .description("Search the local schema snapshot for tables, columns, or functions")
+    .description("Search the local schema snapshot for tables, columns, or functions (FTS5 powered)")
     .argument("<query>", "Search term (table name, column name, or function name)")
     .option("--dir <dir>", "Schema directory", ".supabase-schema")
     .option("--json", "Output as JSON")
@@ -21,69 +93,7 @@ export function searchCommand(): Command {
         process.exit(1);
       }
 
-      const q = query.toLowerCase();
-      const results: Array<{ type: string; name: string; match: string; file: string }> = [];
-
-      // Search tables directory
-      const tablesDir = join(schemaDir, "tables");
-      if (existsSync(tablesDir)) {
-        const files = readdirSync(tablesDir).filter((f) => f.endsWith(".md"));
-        for (const file of files) {
-          const tableName = file.replace(".md", "");
-          const content = readFileSync(join(tablesDir, file), "utf-8");
-
-          // Table name match
-          if (tableName.toLowerCase().includes(q)) {
-            results.push({ type: "table", name: tableName, match: "name", file: `tables/${file}` });
-          }
-
-          // Column name match
-          const lines = content.split("\n");
-          for (const line of lines) {
-            if (line.startsWith("|") && !line.startsWith("| Column") && !line.startsWith("|---")) {
-              const cols = line.split("|").map((c) => c.trim()).filter(Boolean);
-              if (cols.length > 0) {
-                const colName = cols[0].replace(/\s*\*\*PK\*\*/, "");
-                if (colName.toLowerCase().includes(q)) {
-                  const typeStr = cols[1] || "";
-                  results.push({
-                    type: "column",
-                    name: `${tableName}.${colName}`,
-                    match: `${typeStr}`,
-                    file: `tables/${file}`,
-                  });
-                }
-              }
-            }
-          }
-        }
-      }
-
-      // Search functions
-      const funcsFile = join(schemaDir, "functions.md");
-      if (existsSync(funcsFile)) {
-        const content = readFileSync(funcsFile, "utf-8");
-        const lines = content.split("\n");
-        for (const line of lines) {
-          if (line.startsWith("## ")) {
-            const funcName = line.replace("## ", "");
-            if (funcName.toLowerCase().includes(q)) {
-              results.push({ type: "function", name: funcName, match: "name", file: "functions.md" });
-            }
-          }
-        }
-      }
-
-      // Search relationships
-      const relsFile = join(schemaDir, "relationships.json");
-      if (existsSync(relsFile)) {
-        const rels = JSON.parse(readFileSync(relsFile, "utf-8")) as Record<string, string>;
-        for (const [from, to] of Object.entries(rels)) {
-          if (from.toLowerCase().includes(q) || to.toLowerCase().includes(q)) {
-            results.push({ type: "fk", name: `${from} → ${to}`, match: "relationship", file: "relationships.json" });
-          }
-        }
-      }
+      const results = hasDb(schemaDir) ? searchSqlite(schemaDir, query) : searchMarkdown(schemaDir, query);
 
       if (opts.json) {
         write(JSON.stringify(results, null, 2) + "\n");
@@ -97,8 +107,7 @@ export function searchCommand(): Command {
 
       write(`\n${results.length} match(es) for "${query}":\n\n`);
 
-      // Group by type
-      const grouped: Record<string, typeof results> = {};
+      const grouped: Record<string, SearchResult[]> = {};
       for (const r of results) {
         if (!grouped[r.type]) grouped[r.type] = [];
         grouped[r.type].push(r);

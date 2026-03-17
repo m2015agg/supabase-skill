@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { join } from "node:path";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { hasDb, openDb, queryColumns, type ColumnQueryResult } from "../util/db.js";
 
 function write(msg: string): void {
   process.stdout.write(msg);
@@ -16,19 +17,22 @@ interface ColumnMatch {
   isPk: boolean;
 }
 
-function getAllColumns(tablesDir: string): ColumnMatch[] {
+function queryMarkdown(tablesDir: string, opts: {
+  name?: string; type?: string; fk?: boolean; pk?: boolean;
+  nullable?: boolean; notNull?: boolean; hasDefault?: boolean; table?: string;
+}): ColumnMatch[] {
   const results: ColumnMatch[] = [];
   const files = readdirSync(tablesDir).filter((f) => f.endsWith(".md"));
 
   for (const file of files) {
     const table = file.replace(".md", "");
-    const content = readFileSync(join(tablesDir, file), "utf-8");
+    if (opts.table && !table.toLowerCase().includes(opts.table.toLowerCase())) continue;
 
-    for (const line of content.split("\n")) {
+    for (const line of readFileSync(join(tablesDir, file), "utf-8").split("\n")) {
       if (line.startsWith("|") && !line.startsWith("| Column") && !line.startsWith("|---")) {
         const cols = line.split("|").slice(1, -1).map((c) => c.trim());
         if (cols.length >= 5) {
-          results.push({
+          const match: ColumnMatch = {
             table,
             column: cols[0].replace(/\s*\*\*PK\*\*/, ""),
             type: cols[1],
@@ -36,12 +40,34 @@ function getAllColumns(tablesDir: string): ColumnMatch[] {
             defaultVal: cols[3],
             fk: cols[4],
             isPk: cols[0].includes("**PK**"),
-          });
+          };
+
+          if (opts.name && !match.column.toLowerCase().includes(opts.name.toLowerCase())) continue;
+          if (opts.type && !match.type.toLowerCase().includes(opts.type.toLowerCase())) continue;
+          if (opts.fk && !match.fk) continue;
+          if (opts.pk && !match.isPk) continue;
+          if (opts.nullable && match.nullable !== "nullable") continue;
+          if (opts.notNull && match.nullable !== "NOT NULL") continue;
+          if (opts.hasDefault && !match.defaultVal) continue;
+
+          results.push(match);
         }
       }
     }
   }
   return results;
+}
+
+function sqliteToMatch(r: ColumnQueryResult): ColumnMatch {
+  return {
+    table: r.table_name,
+    column: r.name,
+    type: r.type || "unknown",
+    nullable: r.nullable ? "nullable" : "NOT NULL",
+    defaultVal: r.default_value || "",
+    fk: r.fk_table ? `→ ${r.fk_table}.${r.fk_column}` : "",
+    isPk: !!r.is_pk,
+  };
 }
 
 export function columnsCommand(): Command {
@@ -58,61 +84,34 @@ export function columnsCommand(): Command {
     .option("--table <name>", "Filter to specific table")
     .option("--json", "Output as JSON")
     .action((query: string | undefined, opts: {
-      dir: string;
-      type?: string;
-      fk?: boolean;
-      pk?: boolean;
-      nullable?: boolean;
-      notNull?: boolean;
-      hasDefault?: boolean;
-      table?: string;
-      json?: boolean;
+      dir: string; type?: string; fk?: boolean; pk?: boolean;
+      nullable?: boolean; notNull?: boolean; hasDefault?: boolean;
+      table?: string; json?: boolean;
     }) => {
       const schemaDir = join(process.cwd(), opts.dir);
       const tablesDir = join(schemaDir, "tables");
 
-      if (!existsSync(tablesDir)) {
+      if (!existsSync(schemaDir)) {
         write(`No schema snapshot found at ${opts.dir}/\n`);
         write("Run `supabase-skill snapshot` first.\n");
         process.exit(1);
       }
 
-      let columns = getAllColumns(tablesDir);
+      let columns: ColumnMatch[];
 
-      // Apply filters
-      if (query) {
-        const q = query.toLowerCase();
-        columns = columns.filter((c) => c.column.toLowerCase().includes(q));
-      }
-
-      if (opts.type) {
-        const t = opts.type.toLowerCase();
-        columns = columns.filter((c) => c.type.toLowerCase().includes(t));
-      }
-
-      if (opts.fk) {
-        columns = columns.filter((c) => c.fk.length > 0);
-      }
-
-      if (opts.pk) {
-        columns = columns.filter((c) => c.isPk);
-      }
-
-      if (opts.nullable) {
-        columns = columns.filter((c) => c.nullable === "nullable");
-      }
-
-      if (opts.notNull) {
-        columns = columns.filter((c) => c.nullable === "NOT NULL");
-      }
-
-      if (opts.hasDefault) {
-        columns = columns.filter((c) => c.defaultVal.length > 0);
-      }
-
-      if (opts.table) {
-        const tbl = opts.table.toLowerCase();
-        columns = columns.filter((c) => c.table.toLowerCase().includes(tbl));
+      if (hasDb(schemaDir)) {
+        const db = openDb(schemaDir);
+        const results = queryColumns(db, {
+          name: query, type: opts.type, fk: opts.fk, pk: opts.pk,
+          nullable: opts.nullable, notNull: opts.notNull, hasDefault: opts.hasDefault, table: opts.table,
+        });
+        db.close();
+        columns = results.map(sqliteToMatch);
+      } else {
+        columns = queryMarkdown(tablesDir, {
+          name: query, type: opts.type, fk: opts.fk, pk: opts.pk,
+          nullable: opts.nullable, notNull: opts.notNull, hasDefault: opts.hasDefault, table: opts.table,
+        });
       }
 
       if (opts.json) {
@@ -135,14 +134,11 @@ export function columnsCommand(): Command {
       }
       write("\n");
 
-      // Summary stats
       const tables = new Set(columns.map((c) => c.table));
       const types = new Map<string, number>();
       for (const col of columns) {
         types.set(col.type, (types.get(col.type) || 0) + 1);
       }
-
-      write(`Across ${tables.size} table(s). `);
-      write(`Types: ${[...types.entries()].map(([t, n]) => `${t}(${n})`).join(", ")}\n\n`);
+      write(`Across ${tables.size} table(s). Types: ${[...types.entries()].map(([t, n]) => `${t}(${n})`).join(", ")}\n\n`);
     });
 }
