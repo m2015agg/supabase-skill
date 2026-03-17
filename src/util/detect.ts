@@ -33,7 +33,10 @@ export function listProjects(): SupabaseProject[] {
       encoding: "utf-8",
       timeout: 15000,
     });
-    const parsed = JSON.parse(output);
+    // Extract JSON array from output (CLI may prepend warnings and append update notices)
+    const jsonMatch = output.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) return [];
+    const parsed = JSON.parse(jsonMatch[0]);
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
