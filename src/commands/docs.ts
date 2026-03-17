@@ -65,11 +65,12 @@ ${envSection}
 - Must run from a directory with \`supabase/config.toml\` (or run \`supabase init\` first)
 - Only one project can be linked at a time per directory
 
-### SQL Execution
+### SQL Execution (via REST API or psql)
 \`supabase db execute\` does NOT exist. Use these methods:
-- \`curl -s "$SUPABASE_<ENV>_URL/rest/v1/rpc/<function>" -H "apikey: $SUPABASE_<ENV>_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_<ENV>_SERVICE_KEY" -H "Accept-Profile: bibleai"\` — call RPC function
-- \`curl -s "$SUPABASE_<ENV>_URL/rest/v1/<table>?select=*&limit=10" -H "apikey: $SUPABASE_<ENV>_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_<ENV>_SERVICE_KEY" -H "Accept-Profile: bibleai"\` — query table via REST
-- \`psql "$DATABASE_URL" -c "SELECT 1"\` — direct SQL via psql (if connection string available)
+- **Query table (GET)**: \`curl -s "$SUPABASE_<ENV>_URL/rest/v1/<table>?select=*&limit=10" -H "apikey: $SUPABASE_<ENV>_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_<ENV>_SERVICE_KEY" -H "Accept-Profile: bibleai"\`
+- **Call RPC (POST)**: \`curl -s "$SUPABASE_<ENV>_URL/rest/v1/rpc/<function>" -X POST -H "apikey: $SUPABASE_<ENV>_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_<ENV>_SERVICE_KEY" -H "Content-Profile: bibleai" -H "Content-Type: application/json" -d '{}'\`
+- **Direct SQL**: \`psql "$DATABASE_URL" -c "SELECT 1"\` (if connection string available)
+- **Header rules**: GET uses \`Accept-Profile: bibleai\`, POST uses \`Content-Profile: bibleai\`
 - Load env vars first: \`source .env\` or \`export $(grep -v '^#' .env | xargs)\`
 
 ### Migrations (uses --linked, NOT --project-ref)
@@ -106,12 +107,12 @@ ${envSection}
 - \`supabase inspect report\` — CSV of ALL inspect commands
 - Alternative: \`supabase inspect db table-stats --db-url "postgresql://..."\` — inspect without linking
 
-### Storage (uses --linked, NOT --project-ref)
-- \`supabase storage ls ss://bucket/path\` — list objects
-- \`supabase storage cp local.file ss://bucket/path\` — upload
-- \`supabase storage cp ss://bucket/path local.file\` — download
-- \`supabase storage rm ss://bucket/path\` — delete
-- \`supabase storage mv ss://old ss://new\` — move/rename
+### Storage (uses --linked + --experimental)
+- \`supabase storage ls ss:///bucket/path --experimental\` — list objects (note: triple slash ss:///)
+- \`supabase storage cp local.file ss:///bucket/path --experimental\` — upload
+- \`supabase storage cp ss:///bucket/path local.file --experimental\` — download
+- \`supabase storage rm ss:///bucket/path --experimental\` — delete
+- \`supabase storage mv ss:///old ss:///new --experimental\` — move/rename
 
 ### Edge Functions (uses --project-ref)
 - \`supabase functions list --project-ref <ref>\` — list deployed functions
