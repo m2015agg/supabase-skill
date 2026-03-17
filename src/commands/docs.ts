@@ -68,10 +68,10 @@ ${envSection}
 ### Data Operations (REST API — no \`supabase db execute\`)
 Load env vars first: \`source .env\` or \`export $(grep -v '^#' .env | xargs)\`
 Header shorthand: \`-H "apikey: $KEY" -H "Authorization: Bearer $KEY"\`
-GET uses \`Accept-Profile: bibleai\`, POST/PATCH/DELETE use \`Content-Profile: bibleai\`
+GET uses \`Accept-Profile: <schema>\`, POST/PATCH/DELETE use \`Content-Profile: <schema>\`
 
 **SELECT (GET)**:
-- \`curl -s "$URL/rest/v1/<table>?select=col1,col2&limit=10" -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Accept-Profile: bibleai"\`
+- \`curl -s "$URL/rest/v1/<table>?select=col1,col2&limit=10" -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Accept-Profile: <schema>"\`
 
 **Filters** (append to URL query string):
 - \`?col=eq.value\` — equals | \`?col=neq.value\` — not equals
@@ -84,19 +84,19 @@ GET uses \`Accept-Profile: bibleai\`, POST/PATCH/DELETE use \`Content-Profile: b
 **COUNT**: Add \`-H "Prefer: count=exact"\` header, read \`Content-Range\` response header
 
 **INSERT (POST)**:
-- \`curl -s "$URL/rest/v1/<table>" -X POST -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Profile: bibleai" -H "Content-Type: application/json" -H "Prefer: return=representation" -d '{"col": "value"}'\`
+- \`curl -s "$URL/rest/v1/<table>" -X POST -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Profile: <schema>" -H "Content-Type: application/json" -H "Prefer: return=representation" -d '{"col": "value"}'\`
 
 **UPDATE (PATCH)** — ALWAYS include a filter or you update ALL rows:
-- \`curl -s "$URL/rest/v1/<table>?id=eq.<uuid>" -X PATCH -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Profile: bibleai" -H "Content-Type: application/json" -H "Prefer: return=representation" -d '{"col": "new_value"}'\`
+- \`curl -s "$URL/rest/v1/<table>?id=eq.<uuid>" -X PATCH -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Profile: <schema>" -H "Content-Type: application/json" -H "Prefer: return=representation" -d '{"col": "new_value"}'\`
 
 **UPSERT (POST with merge)**:
 - Add header: \`-H "Prefer: resolution=merge-duplicates,return=representation"\`
 
 **DELETE** — ALWAYS include a filter or you delete ALL rows:
-- \`curl -s "$URL/rest/v1/<table>?id=eq.<uuid>" -X DELETE -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Profile: bibleai" -H "Prefer: return=representation"\`
+- \`curl -s "$URL/rest/v1/<table>?id=eq.<uuid>" -X DELETE -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Profile: <schema>" -H "Prefer: return=representation"\`
 
 **Call RPC function (POST)**:
-- \`curl -s "$URL/rest/v1/rpc/<function>" -X POST -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Profile: bibleai" -H "Content-Type: application/json" -d '{"param": "value"}'\`
+- \`curl -s "$URL/rest/v1/rpc/<function>" -X POST -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Profile: <schema>" -H "Content-Type: application/json" -d '{"param": "value"}'\`
 
 **Direct SQL** (if psql available):
 - \`psql "$DATABASE_URL" -c "SELECT 1"\`
@@ -113,23 +113,23 @@ GET uses \`Accept-Profile: bibleai\`, POST/PATCH/DELETE use \`Content-Profile: b
 
 ### DDL (Schema Changes via Migrations)
 All schema changes go through migration files. Create with \`supabase migration new <name>\`, write SQL, apply with \`supabase migration up\`:
-- **CREATE TABLE**: \`CREATE TABLE bibleai.<name> (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), ...);\`
-- **ALTER TABLE**: \`ALTER TABLE bibleai.<table> ADD COLUMN <col> <type>;\`
-- **DROP TABLE**: \`DROP TABLE IF EXISTS bibleai.<table>;\`
-- **CREATE VIEW**: \`CREATE OR REPLACE VIEW bibleai.<name> AS SELECT ...;\`
-- **CREATE INDEX**: \`CREATE INDEX idx_<table>_<col> ON bibleai.<table>(<col>);\`
-- **CREATE FUNCTION/RPC**: \`CREATE OR REPLACE FUNCTION bibleai.<name>(...) RETURNS ... AS $$ ... $$ LANGUAGE plpgsql;\`
-- **RLS Policies**: \`ALTER TABLE bibleai.<table> ENABLE ROW LEVEL SECURITY; CREATE POLICY ...\`
-- **Triggers**: \`CREATE TRIGGER ... BEFORE/AFTER INSERT/UPDATE ON bibleai.<table> ...\`
-- **Enums**: \`CREATE TYPE bibleai.<name> AS ENUM ('val1', 'val2');\`
-- Always use \`bibleai.\` schema prefix for all objects
+- **CREATE TABLE**: \`CREATE TABLE <schema>.<name> (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), ...);\`
+- **ALTER TABLE**: \`ALTER TABLE <schema>.<table> ADD COLUMN <col> <type>;\`
+- **DROP TABLE**: \`DROP TABLE IF EXISTS <schema>.<table>;\`
+- **CREATE VIEW**: \`CREATE OR REPLACE VIEW <schema>.<name> AS SELECT ...;\`
+- **CREATE INDEX**: \`CREATE INDEX idx_<table>_<col> ON <schema>.<table>(<col>);\`
+- **CREATE FUNCTION/RPC**: \`CREATE OR REPLACE FUNCTION <schema>.<name>(...) RETURNS ... AS $$ ... $$ LANGUAGE plpgsql;\`
+- **RLS Policies**: \`ALTER TABLE <schema>.<table> ENABLE ROW LEVEL SECURITY; CREATE POLICY ...\`
+- **Triggers**: \`CREATE TRIGGER ... BEFORE/AFTER INSERT/UPDATE ON <schema>.<table> ...\`
+- **Enums**: \`CREATE TYPE <schema>.<name> AS ENUM ('val1', 'val2');\`
+- Always use \`<schema>.\` schema prefix for all objects
 - Run \`supabase migration list\` BEFORE and AFTER to verify
 
 ### Schema Management (uses --linked, NOT --project-ref)
 - \`supabase db diff\` — diff local vs remote schema
 - \`supabase db dump\` — dump full schema from linked project
 - \`supabase db dump --data-only\` — dump data only
-- \`supabase db dump -s bibleai\` — dump specific schema
+- \`supabase db dump -s <schema>\` — dump specific schema
 - \`supabase db pull\` — pull remote schema to local migrations
 - \`supabase db push\` — push migrations to remote
 - \`supabase db lint\` — check for typing errors (local only)
@@ -231,7 +231,7 @@ If \`.supabase-schema/\` exists, ALWAYS use these commands instead of running SQ
 - Test migrations on STAGE before applying to PROD
 
 ### Exit codes
-- 0 = success, 1 = error`;
+- 0 = success, 1 = error`.replace(/<schema>/g, config?.schema || "public");
 }
 
 const FORMATS: Record<string, { filename: string; wrap: (content: string) => string }> = {

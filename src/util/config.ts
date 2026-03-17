@@ -11,6 +11,7 @@ export interface Environment {
 }
 
 export interface SkillConfig {
+  schema?: string;
   environments: Record<string, Environment>;
   defaultEnv: string;
   safetyRules: {

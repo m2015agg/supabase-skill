@@ -49,7 +49,7 @@ function write(msg: string): void {
   process.stdout.write(msg);
 }
 
-function fetchOpenAPISpec(projectRef: string): OpenAPISpec {
+function fetchOpenAPISpec(projectRef: string, schema: string): OpenAPISpec {
   // Get API keys
   const keysJson = execSync(
     `supabase projects api-keys --project-ref ${projectRef} -o json 2>&1`,
@@ -65,7 +65,7 @@ function fetchOpenAPISpec(projectRef: string): OpenAPISpec {
 
   const baseUrl = `https://${projectRef}.supabase.co`;
   const spec = execSync(
-    `curl -s "${baseUrl}/rest/v1/" -H "apikey: ${serviceKey}" -H "Authorization: Bearer ${serviceKey}" -H "Accept-Profile: bibleai"`,
+    `curl -s "${baseUrl}/rest/v1/" -H "apikey: ${serviceKey}" -H "Authorization: Bearer ${serviceKey}" -H "Accept-Profile: ${schema}"`,
     { encoding: "utf-8", timeout: 30000 },
   );
 
@@ -226,9 +226,9 @@ export function snapshotCommand(): Command {
   return new Command("snapshot")
     .description("Snapshot database schema to local .supabase-schema/ directory for fast agent lookups")
     .option("--project-ref <ref>", "Supabase project ref (defaults to stage from config)")
-    .option("--schema <name>", "Schema to snapshot", "bibleai")
+    .option("--schema <name>", "Schema to snapshot (default: from config or 'public')")
     .option("--output <dir>", "Output directory", ".supabase-schema")
-    .action((opts: { projectRef?: string; schema: string; output: string }) => {
+    .action((opts: { projectRef?: string; schema?: string; output: string }) => {
       const config = readConfig();
 
       // Resolve project ref
@@ -242,13 +242,16 @@ export function snapshotCommand(): Command {
         process.exit(1);
       }
 
-      write(`\n  Snapshotting schema from ${ref}...\n`);
+      // Resolve schema
+      const schema = opts.schema || config?.schema || "public";
+
+      write(`\n  Snapshotting schema "${schema}" from ${ref}...\n`);
 
       // Fetch OpenAPI spec
       write("  Fetching schema via PostgREST... ");
       let spec: OpenAPISpec;
       try {
-        spec = fetchOpenAPISpec(ref);
+        spec = fetchOpenAPISpec(ref, schema);
       } catch (e) {
         write(`FAILED\n  ${(e as Error).message}\n`);
         process.exit(1);

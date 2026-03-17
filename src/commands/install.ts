@@ -178,6 +178,11 @@ export function installCommand(): Command {
           if (envKeys.length > 0) config.defaultEnv = envKeys[0];
         }
       }
+      // Ask for schema name
+      if (isInteractive && Object.keys(config.environments).length > 0) {
+        const schemaAnswer = await prompt("    Database schema name (default: public) → ");
+        config.schema = schemaAnswer.trim() || "public";
+      }
       write("\n");
 
       // ─── Step 4: Fetch API Keys ───
