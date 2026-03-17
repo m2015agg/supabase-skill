@@ -100,6 +100,16 @@ ${envSection}
 - \`supabase-skill docs --format claude\` — CLAUDE.md format
 - \`supabase-skill envs\` — list configured environments
 
+### Schema Snapshot (local DB map — use instead of querying information_schema)
+- \`supabase-skill snapshot\` — snapshot schema to .supabase-schema/ (tables, columns, FKs, functions)
+- \`supabase-skill snapshot --project-ref <ref>\` — snapshot a specific environment
+- \`supabase-skill search <query>\` — search tables, columns, functions, and relationships
+- \`supabase-skill search <query> --json\` — structured JSON output
+- Read \`.supabase-schema/tables/<name>.md\` — full table schema (columns, types, PKs, FKs, defaults)
+- Read \`.supabase-schema/index.md\` — overview of all tables, views, functions
+- Read \`.supabase-schema/relationships.json\` — all foreign key mappings
+- Read \`.supabase-schema/functions.md\` — all RPC functions with parameters
+
 ### Safety Rules
 - NEVER run mutations on PROD without explicit user approval
 - ALWAYS specify \`--project-ref\` — never rely on linked project for remote ops

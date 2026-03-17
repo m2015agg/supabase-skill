@@ -5,6 +5,8 @@ import { initCommand } from "./commands/init.js";
 import { docsCommand } from "./commands/docs.js";
 import { uninstallCommand } from "./commands/uninstall.js";
 import { envsCommand } from "./commands/envs.js";
+import { snapshotCommand } from "./commands/snapshot.js";
+import { searchCommand } from "./commands/search.js";
 
 const program = new Command();
 
@@ -18,5 +20,7 @@ program.addCommand(initCommand());
 program.addCommand(docsCommand());
 program.addCommand(uninstallCommand());
 program.addCommand(envsCommand());
+program.addCommand(snapshotCommand());
+program.addCommand(searchCommand());
 
 program.parse();

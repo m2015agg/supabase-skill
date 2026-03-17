@@ -85,6 +85,8 @@ Next time Claude Code (or Codex, Cursor, etc.) opens your project, it reads the 
 |---------|-------------|
 | `supabase-skill install` | Global setup wizard (CLI check, env tagging, CLAUDE.md) |
 | `supabase-skill init` | Per-project setup (CLAUDE.md + .env + .gitignore) |
+| `supabase-skill snapshot` | Snapshot DB schema to `.supabase-schema/` for fast agent lookups |
+| `supabase-skill search <query>` | Search tables, columns, functions, and FKs locally |
 | `supabase-skill docs` | Output the skill doc to stdout |
 | `supabase-skill docs --format <fmt>` | Output as `claude`, `agents`, `cursor`, `skill`, or `raw` |
 | `supabase-skill envs` | List configured environments with project refs |
@@ -140,6 +142,84 @@ The skill doc includes explicit safety rules that the agent follows:
 - Run supabase migration list BEFORE and AFTER migration operations
 - Test migrations on STAGE before applying to PROD
 ```
+
+## Schema Snapshot (CodeGraph for Your Database)
+
+The killer feature. Instead of your agent running SQL against `information_schema` every time it needs to understand your database (burning context and API calls), `snapshot` creates a local file cache that Claude can grep and read instantly.
+
+### Create a Snapshot
+
+```bash
+supabase-skill snapshot
+```
+
+One API call fetches the full OpenAPI spec from PostgREST, then splits it into small, searchable markdown files:
+
+```
+.supabase-schema/
+├── index.md              # All tables, views, functions at a glance
+├── tables/
+│   ├── episodes.md       # Columns, types, PKs, FKs, defaults, notes
+│   ├── subscriptions.md
+│   ├── users.md
+│   └── ... (one file per table + view)
+├── relationships.json    # Every FK mapping: "episodes.subscription_id" → "subscriptions.id"
+└── functions.md          # All RPC functions with parameter signatures
+```
+
+### What a Table File Looks Like
+
+```markdown
+# episodes
+
+15 columns | 1 PK | 2 FK
+
+| Column | Type | Nullable | Default | FK |
+|--------|------|----------|---------|-----|
+| id **PK** | uuid | NOT NULL | gen_random_uuid() |  |
+| subscription_id | uuid | NOT NULL |  | → subscriptions.id |
+| status | text | nullable | new |  |
+| audio_url | text | nullable |  |  |
+| metadata_id | uuid | nullable |  | → episode_metadata.id |
+...
+
+## Notes
+- **processing_metadata**: Stores additional processing information and AI analysis results
+```
+
+### Search the Snapshot
+
+```bash
+# Find everything related to "episode"
+supabase-skill search episode
+
+# Output:
+#   TABLES: episodes, episode_chunks, episode_metadata, ...
+#   COLUMNS: ai_sections.episode_id (uuid), segments.episode_id (uuid), ...
+#   FUNCTIONS: browse_episodes, episode_semantic_search, ...
+#   FKS: episodes.subscription_id → subscriptions.id, ...
+
+# JSON output for programmatic use
+supabase-skill search subscription --json
+```
+
+### How Agents Use It
+
+Instead of:
+```
+Agent: "Let me query the database to understand the schema..."
+→ runs SQL against information_schema (3-5 seconds, eats context)
+→ parses results
+→ stores in conversation memory
+```
+
+Now:
+```
+Agent: reads .supabase-schema/tables/episodes.md (instant, 20 lines)
+Agent: reads .supabase-schema/relationships.json (instant, FK map)
+```
+
+The snapshot is **markdown** (not JSON) so Claude reads it naturally with zero parsing overhead. Add `.supabase-schema/` to your `.gitignore` and refresh with `supabase-skill snapshot` whenever your schema changes.
 
 ## Multi-Format Output
 
