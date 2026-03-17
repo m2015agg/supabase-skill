@@ -31,7 +31,8 @@ export function installCommand(): Command {
     .description("Guided setup: install CLI, login, configure environments, fetch API keys, update CLAUDE.md")
     .option("--skip-shell", "Skip shell profile modification")
     .option("--ci", "Non-interactive mode for CI/automation (skips prompts)")
-    .action(async (opts: { skipShell?: boolean; ci?: boolean }) => {
+    .option("--init", "After global setup, auto-run init in current project directory")
+    .action(async (opts: { skipShell?: boolean; ci?: boolean; init?: boolean }) => {
       const home = homedir();
       const results: string[] = [];
       const isInteractive = !opts.ci;
@@ -253,11 +254,21 @@ export function installCommand(): Command {
         }
 
         write("\n  Security:\n");
-        write("    ✓ API keys stored in ~/.config/supabase-skill/config.json (mode 600)\n");
-        write("    ✓ CLAUDE.md contains only project refs (not secrets)\n");
-        write("    ✓ `supabase-skill init` writes service keys to .env (gitignored)\n");
+        write("    ✓ API keys in ~/.config/supabase-skill/config.json (mode 600)\n");
+        write("    ✓ CLAUDE.md contains only project refs (no secrets)\n");
+        write("    ✓ .env gets service keys on init (gitignored)\n");
       }
 
-      write("\n  Next: cd into your project and run `supabase-skill init`\n\n");
+      if (opts.init && Object.keys(config.environments).length > 0) {
+        write("\n  Running init in current project...\n\n");
+        try {
+          execSync("supabase-skill init", { stdio: "inherit", cwd: process.cwd() });
+        } catch {
+          write("    ✗ Init failed — run `supabase-skill init` manually\n");
+        }
+      } else {
+        write("\n  Next: cd into your project and run `supabase-skill init`\n");
+        write("  (init auto-runs: .env + CLAUDE.md + snapshot + approve + cron)\n\n");
+      }
     });
 }
