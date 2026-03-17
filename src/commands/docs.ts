@@ -15,10 +15,31 @@ function buildEnvSection(config: SkillConfig | null): string {
     lines.push(`- **${label}**: \`${ref}\` (${name})${warning}`);
   }
 
-  // Add safety reminder
-  if (config.environments["prod"]) {
-    lines.push(`- **Default**: Use STAGE for testing. PROD requires explicit approval.`);
+  // Add routing rules
+  lines.push("");
+  lines.push("**Environment routing** (use these refs when user says...):");
+  for (const [env, { ref }] of Object.entries(config.environments)) {
+    const aliases = env === "prod"
+      ? `"prod", "production", "live"`
+      : env === "stage"
+        ? `"stage", "staging", "test", "preview"`
+        : `"dev", "development", "local"`;
+    lines.push(`- ${aliases} → \`--project-ref ${ref}\``);
   }
+
+  if (config.environments["prod"]) {
+    lines.push(`- **Default**: Always use STAGE unless user explicitly says "prod". PROD requires approval.`);
+  }
+
+  // Add env var instructions for direct API access
+  lines.push("");
+  lines.push("**Direct API access** (for curl/psql when supabase CLI isn't enough):");
+  lines.push("- Read keys from `.env` file — NEVER hardcode keys in commands");
+  for (const [env] of Object.entries(config.environments)) {
+    const prefix = `SUPABASE_${env.toUpperCase()}`;
+    lines.push(`- ${env.toUpperCase()}: \`$${prefix}_URL\`, \`$${prefix}_SERVICE_KEY\`, \`$${prefix}_ANON_KEY\``);
+  }
+  lines.push("- Load with: `source .env` or `export $(grep -v '^#' .env | xargs)`");
 
   return lines.join("\n");
 }

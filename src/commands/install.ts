@@ -3,9 +3,13 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { readFileSync, writeFileSync, existsSync, appendFileSync } from "node:fs";
 import { createInterface } from "node:readline";
+import { execSync } from "node:child_process";
 import { upsertSection } from "../util/claude-md.js";
-import { writeConfig, getDefaultConfig, type SkillConfig, type Environment } from "../util/config.js";
-import { isSupabaseCLIInstalled, isLoggedIn, listProjects, type SupabaseProject } from "../util/detect.js";
+import { writeConfig, getDefaultConfig } from "../util/config.js";
+import {
+  isSupabaseCLIInstalled, isLoggedIn, listProjects, listBranches,
+  fetchApiKeys, installSupabaseCLI,
+} from "../util/detect.js";
 import { getSkillDoc } from "./docs.js";
 
 function prompt(question: string): Promise<string> {
@@ -24,83 +28,172 @@ function write(msg: string): void {
 
 export function installCommand(): Command {
   return new Command("install")
-    .description("Set up supabase-skill globally (checks CLI, configures environments, updates ~/.claude/CLAUDE.md)")
+    .description("Guided setup: install CLI, login, configure environments, fetch API keys, update CLAUDE.md")
     .option("--skip-shell", "Skip shell profile modification")
     .option("--non-interactive", "Skip interactive prompts (use existing config or defaults)")
     .action(async (opts: { skipShell?: boolean; nonInteractive?: boolean }) => {
       const home = homedir();
       const results: string[] = [];
+      const isInteractive = !opts.nonInteractive && process.stdin.isTTY;
 
-      // 1. Check supabase CLI
-      write("\n  Checking supabase CLI... ");
-      const { installed, version } = isSupabaseCLIInstalled();
-      if (!installed) {
-        write("NOT FOUND\n\n");
-        write("  Supabase CLI is required. Install it:\n");
-        write("    brew install supabase/tap/supabase\n");
-        write("    # or: npm install -g supabase\n");
-        write("    # or: https://supabase.com/docs/guides/cli/getting-started\n\n");
-        process.exit(1);
-      }
-      write(`\u2713 v${version}\n`);
+      write("\n  ╔══════════════════════════════════════╗\n");
+      write("  ║   supabase-skill setup wizard        ║\n");
+      write("  ╚══════════════════════════════════════╝\n\n");
 
-      // 2. Check login
-      write("  Checking login status... ");
-      const loggedIn = isLoggedIn();
-      if (!loggedIn) {
-        write("NOT LOGGED IN\n\n");
-        write("  Run: supabase login\n");
-        write("  Then re-run: supabase-skill install\n\n");
-        process.exit(1);
-      }
-      write("\u2713 logged in\n");
-
-      // 3. List projects and tag environments
-      const config = getDefaultConfig();
-
-      if (!opts.nonInteractive && process.stdin.isTTY) {
-        const projects = listProjects();
-        if (projects.length > 0) {
-          write(`\n  Found ${projects.length} project(s):\n`);
-          projects.forEach((p, i) => {
-            write(`    ${i + 1}. ${p.name} (${p.id})\n`);
-          });
-
-          write("\n  Tag each project (prod/stage/dev/skip):\n");
-          for (const project of projects) {
-            const answer = await prompt(`    ${project.name} (${project.id}) \u2192 `);
-            const env = answer.toLowerCase();
-            if (env === "prod" || env === "stage" || env === "dev") {
-              config.environments[env] = { ref: project.id, name: project.name };
+      // ─── Step 1: Supabase CLI ───
+      write("  Step 1/5: Supabase CLI\n");
+      let { installed, version } = isSupabaseCLIInstalled();
+      if (installed) {
+        write(`    ✓ Found v${version}\n\n`);
+      } else {
+        write("    ✗ Not installed\n");
+        if (isInteractive) {
+          const answer = await prompt("    Install now via npm? (y/n) → ");
+          if (answer.toLowerCase() === "y") {
+            write("    Installing supabase CLI...\n");
+            const ok = installSupabaseCLI();
+            if (ok) {
+              const check = isSupabaseCLIInstalled();
+              write(`    ✓ Installed v${check.version}\n\n`);
+              installed = true;
+              version = check.version;
+            } else {
+              write("    ✗ Install failed. Try manually:\n");
+              write("      brew install supabase/tap/supabase\n");
+              write("      # or: npm install -g supabase\n\n");
+              process.exit(1);
             }
-          }
-
-          // Set default env
-          if (config.environments["stage"]) {
-            config.defaultEnv = "stage";
-          } else if (config.environments["dev"]) {
-            config.defaultEnv = "dev";
           } else {
-            const envKeys = Object.keys(config.environments);
-            if (envKeys.length > 0) config.defaultEnv = envKeys[0];
+            write("    Install it manually, then re-run: supabase-skill install\n\n");
+            process.exit(1);
           }
         } else {
-          write("\n  No projects found. You can configure environments later with:\n");
-          write("    supabase-skill install\n");
+          process.exit(1);
         }
       }
 
-      // 4. Write config
-      writeConfig(config);
-      results.push("~/.config/supabase-skill/config.json: created");
+      // ─── Step 2: Login ───
+      write("  Step 2/5: Authentication\n");
+      let loggedIn = isLoggedIn();
+      if (loggedIn) {
+        write("    ✓ Logged in\n\n");
+      } else {
+        write("    ✗ Not logged in\n");
+        if (isInteractive) {
+          const answer = await prompt("    Open browser to login now? (y/n) → ");
+          if (answer.toLowerCase() === "y") {
+            write("    Opening browser for Supabase login...\n\n");
+            try {
+              execSync("supabase login", { stdio: "inherit", timeout: 120000 });
+              loggedIn = isLoggedIn();
+              if (loggedIn) {
+                write("\n    ✓ Logged in\n\n");
+              } else {
+                write("\n    ✗ Login may have failed. Re-run: supabase-skill install\n\n");
+                process.exit(1);
+              }
+            } catch {
+              write("    ✗ Login failed. Run `supabase login` manually, then re-run install.\n\n");
+              process.exit(1);
+            }
+          } else {
+            write("    Run `supabase login` first, then re-run: supabase-skill install\n\n");
+            process.exit(1);
+          }
+        } else {
+          process.exit(1);
+        }
+      }
 
-      // 5. Upsert into global CLAUDE.md
+      // ─── Step 3: Discover Projects + Branches ───
+      write("  Step 3/5: Discovering projects & branches\n");
+      const config = getDefaultConfig();
+
+      const projects = listProjects();
+      if (projects.length === 0) {
+        write("    No projects found. Create a project at supabase.com first.\n\n");
+      } else {
+        const items: Array<{ ref: string; name: string; type: string; parentRef?: string }> = [];
+
+        for (const p of projects) {
+          const ref = p.ref || p.id;
+          const status = p.status || "";
+          const statusTag = status === "ACTIVE_HEALTHY" ? " ✓" : status === "INACTIVE" ? " (inactive)" : "";
+          write(`    ${items.length + 1}. ${p.name} (${ref})${statusTag}\n`);
+          items.push({ ref, name: p.name, type: "project" });
+
+          // Fetch branches for active projects
+          if (status === "ACTIVE_HEALTHY") {
+            write(`       Checking branches... `);
+            const branches = listBranches(ref);
+            const nonDefault = branches.filter((b) => !b.is_default && b.project_ref !== ref);
+            if (nonDefault.length > 0) {
+              write(`${nonDefault.length} found\n`);
+              for (const b of nonDefault) {
+                const bStatus = b.preview_project_status === "ACTIVE_HEALTHY" ? " ✓" : "";
+                write(`       └─ ${b.name} (${b.project_ref})${bStatus}\n`);
+                items.push({ ref: b.project_ref, name: `${p.name} [${b.name}]`, type: "branch", parentRef: ref });
+              }
+            } else {
+              write("none\n");
+            }
+          }
+        }
+
+        if (isInteractive) {
+          write("\n    Tag each environment (prod/stage/dev/skip):\n");
+          for (const item of items) {
+            const indent = item.type === "branch" ? "      " : "    ";
+            const answer = await prompt(`${indent}${item.name} (${item.ref}) → `);
+            const env = answer.toLowerCase();
+            if (env === "prod" || env === "stage" || env === "dev") {
+              config.environments[env] = { ref: item.ref, name: item.name };
+            }
+          }
+        }
+
+        // Set default env
+        if (config.environments["stage"]) {
+          config.defaultEnv = "stage";
+        } else if (config.environments["dev"]) {
+          config.defaultEnv = "dev";
+        } else {
+          const envKeys = Object.keys(config.environments);
+          if (envKeys.length > 0) config.defaultEnv = envKeys[0];
+        }
+      }
+      write("\n");
+
+      // ─── Step 4: Fetch API Keys ───
+      write("  Step 4/5: Fetching API keys\n");
+      for (const [env, envConfig] of Object.entries(config.environments)) {
+        write(`    ${env.toUpperCase()} (${envConfig.ref})... `);
+        const keys = fetchApiKeys(envConfig.ref);
+        if (keys) {
+          envConfig.anonKey = keys.anonKey;
+          envConfig.serviceKey = keys.serviceKey;
+          envConfig.dbUrl = `https://${envConfig.ref}.supabase.co`;
+          write(`✓ anon + service_role keys saved\n`);
+        } else {
+          write("✗ could not fetch (will need manual setup)\n");
+        }
+      }
+      write("\n");
+
+      // ─── Step 5: Write Everything ───
+      write("  Step 5/5: Writing configuration\n");
+
+      // Config file (contains secrets — restrictive permissions)
+      writeConfig(config);
+      results.push("~/.config/supabase-skill/config.json: created (mode 600)");
+
+      // CLAUDE.md (NO secrets — only refs, names, CLI commands)
       const claudeMd = join(home, ".claude", "CLAUDE.md");
       const skillDoc = getSkillDoc(config);
       const claudeResult = upsertSection(claudeMd, skillDoc);
       results.push(`~/.claude/CLAUDE.md: ${claudeResult}`);
 
-      // 6. Shell profile — ensure SUPABASE_ACCESS_TOKEN
+      // Shell profile
       if (!opts.skipShell) {
         const shell = process.env.SHELL || "/bin/bash";
         const profileName = shell.includes("zsh") ? ".zshrc" : ".bashrc";
@@ -120,19 +213,26 @@ export function installCommand(): Command {
         }
       }
 
-      // Output results
-      write("\n  supabase-skill install complete:\n");
+      // Output summary
+      write("\n  ── Setup Complete ──\n\n");
       for (const r of results) {
         write(`    ${r}\n`);
       }
 
       if (Object.keys(config.environments).length > 0) {
-        write("\n  Configured environments:\n");
-        for (const [env, { ref, name }] of Object.entries(config.environments)) {
-          write(`    ${env.toUpperCase()}: ${ref} (${name})\n`);
+        write("\n  Environments:\n");
+        for (const [env, { ref, name, serviceKey }] of Object.entries(config.environments)) {
+          const keyStatus = serviceKey ? "✓ keys" : "✗ no keys";
+          const warning = env === "prod" ? " ⚠️" : "";
+          write(`    ${env.toUpperCase()}: ${ref} (${name}) [${keyStatus}]${warning}\n`);
         }
+
+        write("\n  Security:\n");
+        write("    ✓ API keys stored in ~/.config/supabase-skill/config.json (mode 600)\n");
+        write("    ✓ CLAUDE.md contains only project refs (not secrets)\n");
+        write("    ✓ `supabase-skill init` writes service keys to .env (gitignored)\n");
       }
 
-      write("\n  Next: run `supabase-skill init` in any project directory.\n\n");
+      write("\n  Next: cd into your project and run `supabase-skill init`\n\n");
     });
 }

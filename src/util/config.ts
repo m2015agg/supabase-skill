@@ -5,6 +5,9 @@ import { homedir } from "node:os";
 export interface Environment {
   ref: string;
   name: string;
+  anonKey?: string;
+  serviceKey?: string;
+  dbUrl?: string;
 }
 
 export interface SkillConfig {
@@ -37,7 +40,7 @@ export function readConfig(): SkillConfig | null {
 export function writeConfig(config: SkillConfig): void {
   const dir = getConfigDir();
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-  writeFileSync(getConfigPath(), JSON.stringify(config, null, 2) + "\n");
+  writeFileSync(getConfigPath(), JSON.stringify(config, null, 2) + "\n", { mode: 0o600 });
 }
 
 export function getDefaultConfig(): SkillConfig {
