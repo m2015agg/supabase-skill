@@ -54,66 +54,78 @@ All commands support \`-o json\` for structured output.
 
 ${envSection}
 
-### SQL Execution (daily use)
-NOTE: \`supabase db execute\` does NOT exist. Use these methods instead:
+### IMPORTANT: CLI Flag Reference
+- Database commands (db, migration, inspect, storage) use \`--linked\` (requires \`supabase link\` first)
+- Management commands (functions, projects, secrets, snippets) use \`--project-ref <ref>\`
+- \`supabase db execute\` does NOT exist — use REST API or psql instead
+- To switch linked project: \`supabase link --project-ref <ref>\`
+
+### Project Linking (required before db/migration/inspect/storage commands)
+- \`supabase link --project-ref <ref>\` — link current directory to a Supabase project
+- Must run from a directory with \`supabase/config.toml\` (or run \`supabase init\` first)
+- Only one project can be linked at a time per directory
+
+### SQL Execution
+\`supabase db execute\` does NOT exist. Use these methods:
 - \`curl -s "$SUPABASE_<ENV>_URL/rest/v1/rpc/<function>" -H "apikey: $SUPABASE_<ENV>_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_<ENV>_SERVICE_KEY" -H "Accept-Profile: bibleai"\` — call RPC function
 - \`curl -s "$SUPABASE_<ENV>_URL/rest/v1/<table>?select=*&limit=10" -H "apikey: $SUPABASE_<ENV>_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_<ENV>_SERVICE_KEY" -H "Accept-Profile: bibleai"\` — query table via REST
 - \`psql "$DATABASE_URL" -c "SELECT 1"\` — direct SQL via psql (if connection string available)
 - Load env vars first: \`source .env\` or \`export $(grep -v '^#' .env | xargs)\`
 
-### Migrations
-- \`supabase migration new <name>\` — create empty migration file
-- \`supabase migration list --project-ref <ref>\` — compare local vs remote
-- \`supabase migration up --project-ref <ref>\` — apply pending to remote
-- \`supabase migration down --project-ref <ref> -n 1\` — rollback last N migrations
-- \`supabase migration repair --status applied <version> --project-ref <ref>\` — mark version as applied
-- \`supabase migration repair --status reverted <version> --project-ref <ref>\` — mark version as reverted
-- \`supabase migration squash --project-ref <ref>\` — combine into single file
-- \`supabase migration fetch --project-ref <ref>\` — pull history from remote
+### Migrations (uses --linked, NOT --project-ref)
+- \`supabase migration new <name>\` — create empty migration file (local only)
+- \`supabase migration list\` — compare local vs remote (linked project)
+- \`supabase migration up\` — apply pending migrations to linked project
+- \`supabase migration down -n 1\` — rollback last N migrations
+- \`supabase migration repair --status applied <version>\` — mark version as applied
+- \`supabase migration repair --status reverted <version>\` — mark version as reverted
+- \`supabase migration squash\` — combine into single file
+- \`supabase migration fetch\` — pull migration history from remote
 
-### Schema Management
-- \`supabase db diff --project-ref <ref>\` — diff local vs remote schema
-- \`supabase db dump --project-ref <ref>\` — dump full schema
-- \`supabase db dump --project-ref <ref> --data-only\` — dump data only
-- \`supabase db dump --project-ref <ref> --schema <name>\` — dump specific schema
-- \`supabase db pull --project-ref <ref>\` — pull remote schema to local migrations
-- \`supabase db push --project-ref <ref>\` — push migrations to remote
-- \`supabase db lint\` — check for typing errors
+### Schema Management (uses --linked, NOT --project-ref)
+- \`supabase db diff\` — diff local vs remote schema
+- \`supabase db dump\` — dump full schema from linked project
+- \`supabase db dump --data-only\` — dump data only
+- \`supabase db dump -s bibleai\` — dump specific schema
+- \`supabase db pull\` — pull remote schema to local migrations
+- \`supabase db push\` — push migrations to remote
+- \`supabase db lint\` — check for typing errors (local only)
 
-### Database Inspection (debugging/support)
-- \`supabase inspect db table-stats --project-ref <ref>\` — table sizes + row counts
-- \`supabase inspect db index-stats --project-ref <ref>\` — index usage + scan counts
-- \`supabase inspect db long-running-queries --project-ref <ref>\` — queries > 5min
-- \`supabase inspect db outliers --project-ref <ref>\` — slowest queries by total time
-- \`supabase inspect db bloat --project-ref <ref>\` — dead tuple estimation
-- \`supabase inspect db locks --project-ref <ref>\` — active locks
-- \`supabase inspect db blocking --project-ref <ref>\` — blocking lock chains
-- \`supabase inspect db db-stats --project-ref <ref>\` — cache hit rates, WAL, sizes
-- \`supabase inspect db vacuum-stats --project-ref <ref>\` — vacuum status per table
-- \`supabase inspect db role-stats --project-ref <ref>\` — role information
-- \`supabase inspect db replication-slots --project-ref <ref>\` — replication status
-- \`supabase inspect report --project-ref <ref>\` — CSV of ALL inspect commands
+### Database Inspection (uses --linked or --db-url, NOT --project-ref)
+- \`supabase inspect db table-stats\` — table sizes + row counts
+- \`supabase inspect db index-stats\` — index usage + scan counts
+- \`supabase inspect db long-running-queries\` — queries > 5min
+- \`supabase inspect db outliers\` — slowest queries by total time
+- \`supabase inspect db bloat\` — dead tuple estimation
+- \`supabase inspect db locks\` — active locks
+- \`supabase inspect db blocking\` — blocking lock chains
+- \`supabase inspect db db-stats\` — cache hit rates, WAL, sizes
+- \`supabase inspect db vacuum-stats\` — vacuum status per table
+- \`supabase inspect db role-stats\` — role information
+- \`supabase inspect db replication-slots\` — replication status
+- \`supabase inspect report\` — CSV of ALL inspect commands
+- Alternative: \`supabase inspect db table-stats --db-url "postgresql://..."\` — inspect without linking
 
-### Storage
-- \`supabase storage ls ss://bucket/path --project-ref <ref>\` — list objects
-- \`supabase storage cp local.file ss://bucket/path --project-ref <ref>\` — upload
-- \`supabase storage cp ss://bucket/path local.file --project-ref <ref>\` — download
-- \`supabase storage rm ss://bucket/path --project-ref <ref>\` — delete
-- \`supabase storage mv ss://old ss://new --project-ref <ref>\` — move/rename
+### Storage (uses --linked, NOT --project-ref)
+- \`supabase storage ls ss://bucket/path\` — list objects
+- \`supabase storage cp local.file ss://bucket/path\` — upload
+- \`supabase storage cp ss://bucket/path local.file\` — download
+- \`supabase storage rm ss://bucket/path\` — delete
+- \`supabase storage mv ss://old ss://new\` — move/rename
 
-### Edge Functions
+### Edge Functions (uses --project-ref)
 - \`supabase functions list --project-ref <ref>\` — list deployed functions
 - \`supabase functions deploy <name> --project-ref <ref>\` — deploy function
 - \`supabase functions delete <name> --project-ref <ref>\` — delete function
 - \`supabase functions serve\` — serve locally for testing
 
-### Project Management
+### Project Management (uses --project-ref)
 - \`supabase projects list -o json\` — list all projects
 - \`supabase projects api-keys --project-ref <ref> -o json\` — get API keys
 - \`supabase secrets list --project-ref <ref>\` — list env secrets
 - \`supabase secrets set KEY=VALUE --project-ref <ref>\` — set secret
 
-### SQL Snippets (from dashboard)
+### SQL Snippets (uses --project-ref)
 - \`supabase snippets list --project-ref <ref> -o json\` — list saved snippets
 - \`supabase snippets download <id> --project-ref <ref>\` — download snippet SQL
 
