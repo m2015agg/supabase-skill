@@ -30,11 +30,11 @@ export function installCommand(): Command {
   return new Command("install")
     .description("Guided setup: install CLI, login, configure environments, fetch API keys, update CLAUDE.md")
     .option("--skip-shell", "Skip shell profile modification")
-    .option("--non-interactive", "Skip interactive prompts (use existing config or defaults)")
-    .action(async (opts: { skipShell?: boolean; nonInteractive?: boolean }) => {
+    .option("--ci", "Non-interactive mode for CI/automation (skips prompts)")
+    .action(async (opts: { skipShell?: boolean; ci?: boolean }) => {
       const home = homedir();
       const results: string[] = [];
-      const isInteractive = !opts.nonInteractive && process.stdin.isTTY;
+      const isInteractive = !opts.ci;
 
       write("\n  ╔══════════════════════════════════════╗\n");
       write("  ║   supabase-skill setup wizard        ║\n");
@@ -47,27 +47,23 @@ export function installCommand(): Command {
         write(`    ✓ Found v${version}\n\n`);
       } else {
         write("    ✗ Not installed\n");
-        if (isInteractive) {
-          const answer = await prompt("    Install now via npm? (y/n) → ");
-          if (answer.toLowerCase() === "y") {
-            write("    Installing supabase CLI...\n");
-            const ok = installSupabaseCLI();
-            if (ok) {
-              const check = isSupabaseCLIInstalled();
-              write(`    ✓ Installed v${check.version}\n\n`);
-              installed = true;
-              version = check.version;
-            } else {
-              write("    ✗ Install failed. Try manually:\n");
-              write("      brew install supabase/tap/supabase\n");
-              write("      # or: npm install -g supabase\n\n");
-              process.exit(1);
-            }
+        const answer = isInteractive ? await prompt("    Install now via npm? (y/n) → ") : "n";
+        if (answer.toLowerCase() === "y") {
+          write("    Installing supabase CLI...\n");
+          const ok = installSupabaseCLI();
+          if (ok) {
+            const check = isSupabaseCLIInstalled();
+            write(`    ✓ Installed v${check.version}\n\n`);
+            installed = true;
+            version = check.version;
           } else {
-            write("    Install it manually, then re-run: supabase-skill install\n\n");
+            write("    ✗ Install failed. Try manually:\n");
+            write("      brew install supabase/tap/supabase\n");
+            write("      # or: npm install -g supabase\n\n");
             process.exit(1);
           }
         } else {
+          write("    Install it manually, then re-run: supabase-skill install\n\n");
           process.exit(1);
         }
       }
@@ -79,28 +75,24 @@ export function installCommand(): Command {
         write("    ✓ Logged in\n\n");
       } else {
         write("    ✗ Not logged in\n");
-        if (isInteractive) {
-          const answer = await prompt("    Open browser to login now? (y/n) → ");
-          if (answer.toLowerCase() === "y") {
-            write("    Opening browser for Supabase login...\n\n");
-            try {
-              execSync("supabase login", { stdio: "inherit", timeout: 120000 });
-              loggedIn = isLoggedIn();
-              if (loggedIn) {
-                write("\n    ✓ Logged in\n\n");
-              } else {
-                write("\n    ✗ Login may have failed. Re-run: supabase-skill install\n\n");
-                process.exit(1);
-              }
-            } catch {
-              write("    ✗ Login failed. Run `supabase login` manually, then re-run install.\n\n");
+        const answer = isInteractive ? await prompt("    Open browser to login now? (y/n) → ") : "n";
+        if (answer.toLowerCase() === "y") {
+          write("    Opening browser for Supabase login...\n\n");
+          try {
+            execSync("supabase login", { stdio: "inherit", timeout: 120000 });
+            loggedIn = isLoggedIn();
+            if (loggedIn) {
+              write("\n    ✓ Logged in\n\n");
+            } else {
+              write("\n    ✗ Login may have failed. Re-run: supabase-skill install\n\n");
               process.exit(1);
             }
-          } else {
-            write("    Run `supabase login` first, then re-run: supabase-skill install\n\n");
+          } catch {
+            write("    ✗ Login failed. Run `supabase login` manually, then re-run install.\n\n");
             process.exit(1);
           }
         } else {
+          write("    Run `supabase login` first, then re-run: supabase-skill install\n\n");
           process.exit(1);
         }
       }
@@ -166,13 +158,17 @@ export function installCommand(): Command {
 
       // ─── Step 4: Fetch API Keys ───
       write("  Step 4/5: Fetching API keys\n");
-      for (const [env, envConfig] of Object.entries(config.environments)) {
+      for (const env of Object.keys(config.environments)) {
+        const envConfig = config.environments[env];
         write(`    ${env.toUpperCase()} (${envConfig.ref})... `);
         const keys = fetchApiKeys(envConfig.ref);
         if (keys) {
-          envConfig.anonKey = keys.anonKey;
-          envConfig.serviceKey = keys.serviceKey;
-          envConfig.dbUrl = `https://${envConfig.ref}.supabase.co`;
+          config.environments[env] = {
+            ...envConfig,
+            anonKey: keys.anonKey,
+            serviceKey: keys.serviceKey,
+            dbUrl: `https://${envConfig.ref}.supabase.co`,
+          };
           write(`✓ anon + service_role keys saved\n`);
         } else {
           write("✗ could not fetch (will need manual setup)\n");

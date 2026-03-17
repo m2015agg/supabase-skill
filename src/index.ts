@@ -17,7 +17,7 @@ const program = new Command();
 program
   .name("supabase-skill")
   .description("Supabase CLI skill for AI agents. Installs comprehensive CLI instructions into CLAUDE.md with multi-environment support.")
-  .version("0.2.0");
+  .version("0.2.1");
 
 program.addCommand(installCommand());
 program.addCommand(initCommand());
