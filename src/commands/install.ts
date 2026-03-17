@@ -41,10 +41,34 @@ export function installCommand(): Command {
       write("  ╚══════════════════════════════════════╝\n\n");
 
       // ─── Step 1: Supabase CLI ───
+      const MIN_VERSION = "2.67.0";
       write("  Step 1/5: Supabase CLI\n");
       let { installed, version } = isSupabaseCLIInstalled();
       if (installed) {
-        write(`    ✓ Found v${version}\n\n`);
+        const [curMaj, curMin, curPatch] = version.split(".").map(Number);
+        const [minMaj, minMin, minPatch] = MIN_VERSION.split(".").map(Number);
+        const isUpToDate = curMaj > minMaj || (curMaj === minMaj && (curMin > minMin || (curMin === minMin && curPatch >= minPatch)));
+        if (isUpToDate) {
+          write(`    ✓ Found v${version} (minimum: v${MIN_VERSION})\n\n`);
+        } else {
+          write(`    ⚠ Found v${version} — minimum required is v${MIN_VERSION}\n`);
+          const answer = isInteractive ? await prompt("    Update now via npm? (y/n) → ") : "n";
+          if (answer.toLowerCase() === "y") {
+            write("    Updating supabase CLI...\n");
+            const ok = installSupabaseCLI();
+            if (ok) {
+              const check = isSupabaseCLIInstalled();
+              write(`    ✓ Updated to v${check.version}\n\n`);
+              version = check.version;
+            } else {
+              write("    ✗ Update failed. Try: npm install -g supabase\n\n");
+              process.exit(1);
+            }
+          } else {
+            write("    Update manually: npm install -g supabase\n\n");
+            process.exit(1);
+          }
+        }
       } else {
         write("    ✗ Not installed\n");
         const answer = isInteractive ? await prompt("    Install now via npm? (y/n) → ") : "n";
