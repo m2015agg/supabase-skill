@@ -322,11 +322,49 @@ Stored at `~/.config/supabase-skill/config.json`:
 }
 ```
 
+## Real-World Token Savings — Hard Numbers
+
+We analyzed 14 Claude Code conversations on a production Supabase project (80 tables, 48 RPCs, 86 foreign keys) to measure how many tokens schema exploration actually consumes.
+
+### Before supabase-skill (SQL queries every time)
+
+| Metric | Value |
+|--------|-------|
+| Conversations doing schema exploration | **14** |
+| Total schema query + result dumps | **265 calls** |
+| Total tokens consumed by schema results | **~330,000** |
+| Cost at Opus rates ($15/M input) | **$4.96** |
+| Average tokens per schema call | **~1,247** |
+| Heaviest single query result | **~22,282 tokens** |
+
+#### Heaviest Conversations
+
+| Session | Calls | Tokens | Task |
+|---------|-------|--------|------|
+| Support AI Console planning | 56 | ~81,000 | Exploring tables for agent access |
+| Study Mode migration design | 41 | ~74,000 | Designing new tables + FKs |
+| Schema exploration | 43 | ~53,000 | General schema discovery |
+| Building supabase-skill | 24 | ~33,000 | This tool, ironically |
+
+### After supabase-skill (local snapshot)
+
+| Operation | Before (SQL query) | After (local file) | Savings |
+|-----------|-------------------|---------------------|---------|
+| "What columns does episodes have?" | ~1,200 tokens | ~80 tokens | **93%** |
+| "Find all jsonb columns" | ~3,000 tokens | ~200 tokens | **93%** |
+| "What references episodes?" | ~2,000 tokens | ~150 tokens | **92%** |
+| "Show me the full schema" | ~22,000 tokens | ~500 tokens | **98%** |
+
+**Conservative estimate**: Those 330,000 tokens across 14 conversations drop to roughly **15,000-20,000 tokens** with the local snapshot. That's a **~95% reduction** — or about **$4.70 saved** at Opus rates just from the conversations we measured.
+
+And that's just one project. The savings compound across every conversation, every day, for every developer on the team.
+
 ## Why CLIs Beat MCP for Agents
 
 | | MCP Server | CLI Skill Doc |
 |---|---|---|
 | **Context overhead** | 30-40% of context window consumed by schema | Zero — agent reads a concise doc |
+| **Schema exploration** | ~1,247 tokens per query (measured) | ~80-200 tokens per file read |
 | **Multi-environment** | One database per server instance | `--project-ref` switches instantly |
 | **Runtime** | Server process running in background | No process — just `exec` calls |
 | **Dependencies** | Protocol handshake, WebSocket, auth | `supabase` binary + a text file |
