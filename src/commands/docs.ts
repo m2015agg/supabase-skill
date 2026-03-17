@@ -65,13 +65,41 @@ ${envSection}
 - Must run from a directory with \`supabase/config.toml\` (or run \`supabase init\` first)
 - Only one project can be linked at a time per directory
 
-### SQL Execution (via REST API or psql)
-\`supabase db execute\` does NOT exist. Use these methods:
-- **Query table (GET)**: \`curl -s "$SUPABASE_<ENV>_URL/rest/v1/<table>?select=*&limit=10" -H "apikey: $SUPABASE_<ENV>_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_<ENV>_SERVICE_KEY" -H "Accept-Profile: bibleai"\`
-- **Call RPC (POST)**: \`curl -s "$SUPABASE_<ENV>_URL/rest/v1/rpc/<function>" -X POST -H "apikey: $SUPABASE_<ENV>_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_<ENV>_SERVICE_KEY" -H "Content-Profile: bibleai" -H "Content-Type: application/json" -d '{}'\`
-- **Direct SQL**: \`psql "$DATABASE_URL" -c "SELECT 1"\` (if connection string available)
-- **Header rules**: GET uses \`Accept-Profile: bibleai\`, POST uses \`Content-Profile: bibleai\`
-- Load env vars first: \`source .env\` or \`export $(grep -v '^#' .env | xargs)\`
+### Data Operations (REST API — no \`supabase db execute\`)
+Load env vars first: \`source .env\` or \`export $(grep -v '^#' .env | xargs)\`
+Header shorthand: \`-H "apikey: $KEY" -H "Authorization: Bearer $KEY"\`
+GET uses \`Accept-Profile: bibleai\`, POST/PATCH/DELETE use \`Content-Profile: bibleai\`
+
+**SELECT (GET)**:
+- \`curl -s "$URL/rest/v1/<table>?select=col1,col2&limit=10" -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Accept-Profile: bibleai"\`
+
+**Filters** (append to URL query string):
+- \`?col=eq.value\` — equals | \`?col=neq.value\` — not equals
+- \`?col=gt.5\` — greater than | \`?col=gte.5\` — greater or equal | \`?col=lt.5\` | \`?col=lte.5\`
+- \`?col=like.*pattern*\` — LIKE | \`?col=ilike.*pattern*\` — case-insensitive LIKE
+- \`?col=in.(val1,val2)\` — IN list | \`?col=is.null\` — IS NULL | \`?col=is.true\`
+- \`?or=(col1.eq.a,col2.eq.b)\` — OR conditions
+- \`?order=col.desc\` — ORDER BY | \`?limit=10&offset=20\` — pagination
+
+**COUNT**: Add \`-H "Prefer: count=exact"\` header, read \`Content-Range\` response header
+
+**INSERT (POST)**:
+- \`curl -s "$URL/rest/v1/<table>" -X POST -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Profile: bibleai" -H "Content-Type: application/json" -H "Prefer: return=representation" -d '{"col": "value"}'\`
+
+**UPDATE (PATCH)** — ALWAYS include a filter or you update ALL rows:
+- \`curl -s "$URL/rest/v1/<table>?id=eq.<uuid>" -X PATCH -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Profile: bibleai" -H "Content-Type: application/json" -H "Prefer: return=representation" -d '{"col": "new_value"}'\`
+
+**UPSERT (POST with merge)**:
+- Add header: \`-H "Prefer: resolution=merge-duplicates,return=representation"\`
+
+**DELETE** — ALWAYS include a filter or you delete ALL rows:
+- \`curl -s "$URL/rest/v1/<table>?id=eq.<uuid>" -X DELETE -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Profile: bibleai" -H "Prefer: return=representation"\`
+
+**Call RPC function (POST)**:
+- \`curl -s "$URL/rest/v1/rpc/<function>" -X POST -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Profile: bibleai" -H "Content-Type: application/json" -d '{"param": "value"}'\`
+
+**Direct SQL** (if psql available):
+- \`psql "$DATABASE_URL" -c "SELECT 1"\`
 
 ### Migrations (uses --linked, NOT --project-ref)
 - \`supabase migration new <name>\` — create empty migration file (local only)
@@ -82,6 +110,20 @@ ${envSection}
 - \`supabase migration repair --status reverted <version>\` — mark version as reverted
 - \`supabase migration squash\` — combine into single file
 - \`supabase migration fetch\` — pull migration history from remote
+
+### DDL (Schema Changes via Migrations)
+All schema changes go through migration files. Create with \`supabase migration new <name>\`, write SQL, apply with \`supabase migration up\`:
+- **CREATE TABLE**: \`CREATE TABLE bibleai.<name> (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), ...);\`
+- **ALTER TABLE**: \`ALTER TABLE bibleai.<table> ADD COLUMN <col> <type>;\`
+- **DROP TABLE**: \`DROP TABLE IF EXISTS bibleai.<table>;\`
+- **CREATE VIEW**: \`CREATE OR REPLACE VIEW bibleai.<name> AS SELECT ...;\`
+- **CREATE INDEX**: \`CREATE INDEX idx_<table>_<col> ON bibleai.<table>(<col>);\`
+- **CREATE FUNCTION/RPC**: \`CREATE OR REPLACE FUNCTION bibleai.<name>(...) RETURNS ... AS $$ ... $$ LANGUAGE plpgsql;\`
+- **RLS Policies**: \`ALTER TABLE bibleai.<table> ENABLE ROW LEVEL SECURITY; CREATE POLICY ...\`
+- **Triggers**: \`CREATE TRIGGER ... BEFORE/AFTER INSERT/UPDATE ON bibleai.<table> ...\`
+- **Enums**: \`CREATE TYPE bibleai.<name> AS ENUM ('val1', 'val2');\`
+- Always use \`bibleai.\` schema prefix for all objects
+- Run \`supabase migration list\` BEFORE and AFTER to verify
 
 ### Schema Management (uses --linked, NOT --project-ref)
 - \`supabase db diff\` — diff local vs remote schema
@@ -118,13 +160,33 @@ ${envSection}
 - \`supabase functions list --project-ref <ref>\` — list deployed functions
 - \`supabase functions deploy <name> --project-ref <ref>\` — deploy function
 - \`supabase functions delete <name> --project-ref <ref>\` — delete function
-- \`supabase functions serve\` — serve locally for testing
+- \`supabase functions new <name>\` — create new function locally
+- \`supabase functions download [name]\` — download function source from linked project
+- \`supabase functions serve\` — serve all functions locally for testing
+
+### Branches (uses --project-ref)
+- \`supabase branches list --project-ref <ref> -o json\` — list all preview branches
+- \`supabase branches create <name> --project-ref <ref>\` — create preview branch
+- \`supabase branches get <branch-id> --project-ref <ref>\` — get branch details
+- \`supabase branches delete <branch-id> --project-ref <ref>\` — delete branch
+- \`supabase branches pause <branch-id> --project-ref <ref>\` — pause branch (save costs)
+- \`supabase branches unpause <branch-id> --project-ref <ref>\` — resume branch
+
+### Backups (uses --project-ref)
+- \`supabase backups list --project-ref <ref>\` — list available physical backups
+- \`supabase backups restore --project-ref <ref>\` — restore to specific timestamp (PITR)
 
 ### Project Management (uses --project-ref)
 - \`supabase projects list -o json\` — list all projects
 - \`supabase projects api-keys --project-ref <ref> -o json\` — get API keys
 - \`supabase secrets list --project-ref <ref>\` — list env secrets
 - \`supabase secrets set KEY=VALUE --project-ref <ref>\` — set secret
+- \`supabase postgres-config get --project-ref <ref>\` — get Postgres config overrides
+- \`supabase postgres-config update --project-ref <ref>\` — update Postgres config
+
+### Code Generation
+- \`supabase gen types --linked\` — generate TypeScript types from linked project schema
+- \`supabase gen types --project-id <ref>\` — generate types from specific project
 
 ### SQL Snippets (uses --project-ref)
 - \`supabase snippets list --project-ref <ref> -o json\` — list saved snippets
