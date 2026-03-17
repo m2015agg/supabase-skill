@@ -55,8 +55,11 @@ All commands support \`-o json\` for structured output.
 ${envSection}
 
 ### SQL Execution (daily use)
-- \`supabase db execute --project-ref <ref> --stdin <<< "SELECT 1"\` — run inline SQL
-- \`supabase db execute --project-ref <ref> -f path/to/file.sql\` — run SQL file
+NOTE: \`supabase db execute\` does NOT exist. Use these methods instead:
+- \`curl -s "$SUPABASE_<ENV>_URL/rest/v1/rpc/<function>" -H "apikey: $SUPABASE_<ENV>_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_<ENV>_SERVICE_KEY" -H "Accept-Profile: bibleai"\` — call RPC function
+- \`curl -s "$SUPABASE_<ENV>_URL/rest/v1/<table>?select=*&limit=10" -H "apikey: $SUPABASE_<ENV>_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_<ENV>_SERVICE_KEY" -H "Accept-Profile: bibleai"\` — query table via REST
+- \`psql "$DATABASE_URL" -c "SELECT 1"\` — direct SQL via psql (if connection string available)
+- Load env vars first: \`source .env\` or \`export $(grep -v '^#' .env | xargs)\`
 
 ### Migrations
 - \`supabase migration new <name>\` — create empty migration file
