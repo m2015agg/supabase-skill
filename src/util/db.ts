@@ -298,7 +298,7 @@ export function getRelatedTables(
   tableName: string,
   maxDepth: number,
 ): RelatedTable[] {
-  // Outgoing (this table references)
+  // Outgoing (this table references) — deduplicate by table_name, keep shallowest
   const outgoing = db.prepare(`
     WITH RECURSIVE refs(tbl, from_col, to_col, depth) AS (
       SELECT to_table, from_column, to_column, 1
@@ -309,11 +309,12 @@ export function getRelatedTables(
       JOIN refs ON r.from_table = refs.tbl
       WHERE refs.depth < ?
     )
-    SELECT DISTINCT tbl as table_name, 'references' as direction, from_col as from_column, to_col as to_column, depth
+    SELECT tbl as table_name, 'references' as direction, from_col as from_column, to_col as to_column, MIN(depth) as depth
     FROM refs
+    GROUP BY tbl
   `).all(tableName, maxDepth) as RelatedTable[];
 
-  // Incoming (referenced by)
+  // Incoming (referenced by) — deduplicate by table_name, keep shallowest
   const incoming = db.prepare(`
     WITH RECURSIVE refs(tbl, from_col, to_col, depth) AS (
       SELECT from_table, from_column, to_column, 1
@@ -324,8 +325,9 @@ export function getRelatedTables(
       JOIN refs ON r.to_table = refs.tbl
       WHERE refs.depth < ?
     )
-    SELECT DISTINCT tbl as table_name, 'referenced by' as direction, from_col as from_column, to_col as to_column, depth
+    SELECT tbl as table_name, 'referenced by' as direction, from_col as from_column, to_col as to_column, MIN(depth) as depth
     FROM refs
+    GROUP BY tbl
   `).all(tableName, maxDepth) as RelatedTable[];
 
   return [...outgoing, ...incoming];
