@@ -118,6 +118,12 @@ If \`.supabase-schema/\` exists, ALWAYS use these commands instead of running SQ
 - Read \`.supabase-schema/relationships.json\` — all foreign key mappings
 - Read \`.supabase-schema/functions.md\` — all RPC functions with parameters
 
+### Schema Snapshot Auto-Refresh
+- Snapshot refreshes nightly via cron (if configured with \`supabase-skill cron\`)
+- **After applying migrations**: Run \`supabase-skill snapshot\` to update the local schema cache
+- **After creating/altering tables**: Run \`supabase-skill snapshot\` before continuing work
+- **Rule of thumb**: If you ran any DDL (CREATE, ALTER, DROP) or migration commands, refresh the snapshot immediately
+
 ### Safety Rules
 - NEVER run mutations on PROD without explicit user approval
 - ALWAYS specify \`--project-ref\` — never rely on linked project for remote ops

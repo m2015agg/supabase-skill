@@ -10,6 +10,7 @@ import { searchCommand } from "./commands/search.js";
 import { contextCommand } from "./commands/context.js";
 import { columnsCommand } from "./commands/columns.js";
 import { tableCommand } from "./commands/table.js";
+import { cronCommand } from "./commands/cron.js";
 
 const program = new Command();
 
@@ -28,5 +29,6 @@ program.addCommand(searchCommand());
 program.addCommand(contextCommand());
 program.addCommand(columnsCommand());
 program.addCommand(tableCommand());
+program.addCommand(cronCommand());
 
 program.parse();
