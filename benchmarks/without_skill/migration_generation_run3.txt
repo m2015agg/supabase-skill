@@ -1,18 +1,16 @@
-No write permission granted. Here's the migration SQL to create manually:
+I need your permission to write the file. Here's what the migration will contain — please approve the Write tool when prompted:
 
 **File:** `supabase/migrations/20260318000000_add_priority_to_plan_blocks.sql`
-
 ```sql
 ALTER TABLE bibleai.plan_blocks
-    ADD COLUMN priority integer NOT NULL DEFAULT 0;
+  ADD COLUMN priority integer NOT NULL DEFAULT 0;
 ```
 
-**Current `plan_blocks` columns** (from schema snapshot):
-- `id`, `plan_day_id`, `block_type_id`, `block_order`, `target_duration_seconds`, `content`, `completed_at`, `created_at`, `updated_at`, `status`
+The `plan_blocks` table currently has 10 columns (no `priority`). This adds `priority integer NOT NULL DEFAULT 0` — existing rows will default to `0` automatically.
 
-No existing `priority` column — safe to add.
-
-**To apply to staging:**
+To apply to staging after creating the file:
 ```bash
 supabase migration up --project-ref jugnzbfalgeyaqrhlvgr
 ```
+
+Want me to retry writing the file?

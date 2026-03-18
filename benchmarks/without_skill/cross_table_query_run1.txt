@@ -1,1 +1,6 @@
-Please approve the `mcp__supabase__execute_sql` tool call — it needs permission to query the foreign key metadata from `information_schema`.
+It looks like the `mcp__supabase__execute_sql` tool isn't approved in your current permission settings. You can either:
+
+1. **Approve it in the UI** when prompted, or
+2. **Allow it permanently** by running `/update-config` and adding it to your allowed tools
+
+Would you like me to use the `supabase-specialist` agent instead, which already has this tool available? Or can you approve the permission prompt above?

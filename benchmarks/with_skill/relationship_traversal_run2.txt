@@ -1,8 +1,10 @@
 Two tables have foreign keys pointing to `plans`:
 
-| Table | Column | FK |
-|-------|--------|-----|
-| `plan_days` | `plan_id` | → `plans.id` |
-| `plan_blocks` | `plan_day_id` | → `plans.id` (via plan_days) |
+| Table | FK Column | Points To |
+|-------|-----------|-----------|
+| `plan_days` | `plan_id` | `plans.id` |
+| `plan_blocks` | `plan_day_id` | `plans.id` (indirect — via plan_days) |
 
-Note that `plan_blocks` points to `plan_days.plan_day_id`, not directly to `plans` — so `plan_days` is the direct child, and `plan_blocks` is a grandchild. Also, `plans` itself has one outbound FK: `block_recipe_id → plan_block_recipes.id`.
+Note: `plan_blocks.plan_day_id` technically points to `plan_days`, not directly to `plans` — so only **`plan_days`** has a direct FK to `plans.id`.
+
+Also worth knowing: `plan_day_feedback`, `plan_prompt_recipes`, and `plan_rag_recipes` are name-related but have no declared FK constraints.

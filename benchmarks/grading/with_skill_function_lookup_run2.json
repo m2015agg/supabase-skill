@@ -6,5 +6,5 @@
   ],
   "assertions_missed": [],
   "quality_score": 5,
-  "notes": "Response clearly contains both required terms. 'function' appears throughout in table headers and function names; 'parameter' appears in column headers and descriptions. The response is comprehensive, well-organized, and accurately presents RPC functions grouped by category with their parameters."
+  "notes": "Response comprehensively lists all 48 RPC functions with their parameters, organized into logical categories. Both required assertions ('function' and 'parameter') are clearly present throughout the response."
 }

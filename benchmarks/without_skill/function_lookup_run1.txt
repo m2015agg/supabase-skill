@@ -1,1 +1,1 @@
-Waiting on your permission to run that query. Once approved, it will list all functions in the `bibleai` schema with their parameter names and types from `information_schema.routines` + `information_schema.parameters`.
+Waiting for you to approve the `mcp__supabase__execute_sql` tool call — please allow it so I can query `pg_proc`.

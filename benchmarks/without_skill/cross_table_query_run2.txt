@@ -1,1 +1,1 @@
-Please approve the `mcp__supabase__execute_sql` tool call — it's a read-only query on the `information_schema` to inspect foreign key constraints.
+Please approve the `mcp__supabase__execute_sql` tool use so I can query the foreign key relationships.

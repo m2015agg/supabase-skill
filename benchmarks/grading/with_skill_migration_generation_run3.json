@@ -10,5 +10,5 @@
   ],
   "assertions_missed": [],
   "quality_score": 5,
-  "notes": "All required assertions are present. The SQL is correct and complete, with proper schema prefix, column type, and default value. The response also includes helpful context about NOT NULL and how to apply the migration."
+  "notes": "All required assertions are present. The response includes a well-formed SQL migration with correct schema prefix, table name, column name, type, and default value. It also provides the migration filename and apply command."
 }

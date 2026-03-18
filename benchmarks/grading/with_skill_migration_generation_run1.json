@@ -10,5 +10,5 @@
   ],
   "assertions_missed": [],
   "quality_score": 5,
-  "notes": "All required assertions are present. The response provides a complete, accurate migration SQL with all required elements, includes helpful context about the table, and follows safe deployment practices by staging first."
+  "notes": "All required assertions are present. The response includes a complete, well-formed migration SQL with ALTER TABLE bibleai.plan_blocks, adds the priority column as integer NOT NULL DEFAULT 0, provides context about existing schema, and includes the command to apply the migration."
 }

@@ -1,1 +1,1 @@
-Please approve the `mcp__supabase__execute_sql` tool call to query the database. The query reads from `information_schema.routines` and `information_schema.parameters` — read-only, no mutations.
+Please grant permission for `mcp__supabase__execute_sql` and I'll run the query.

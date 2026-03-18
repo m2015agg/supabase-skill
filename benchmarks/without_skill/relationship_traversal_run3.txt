@@ -1,1 +1,1 @@
-Waiting for your approval to run the SQL query. Please grant access to `mcp__supabase__execute_sql` to proceed.
+Permission was denied. Please approve the `mcp__supabase__execute_sql` tool call to continue, or let me know if you'd prefer I use a different approach (e.g., reading the local schema snapshot or migration files).

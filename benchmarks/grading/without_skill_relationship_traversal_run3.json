@@ -7,5 +7,5 @@
     "plan_day_feedback"
   ],
   "quality_score": 1,
-  "notes": "The response contains no actual content \u2014 it's just a permission request. None of the required assertions are present."
+  "notes": "The response contains no actual content - it's a permission denial message asking for approval to run a tool. None of the required assertions (plan_days, plan_blocks, plan_day_feedback) are mentioned."
 }

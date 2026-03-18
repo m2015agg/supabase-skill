@@ -4,6 +4,6 @@
     "jsonb"
   ],
   "assertions_missed": [],
-  "quality_score": 4,
-  "notes": "The response contains 'jsonb' in the SQL query, satisfying the required assertion. The response explains a permission issue and shows the correct query to find jsonb columns in the bibleai schema."
+  "quality_score": 3,
+  "notes": "The response contains 'jsonb' in the suggested command, satisfying the required assertion. However, the response is incomplete as it failed to actually execute the query and provide results, instead asking for permission and offering an alternative command."
 }

@@ -9,5 +9,5 @@
     "user_id"
   ],
   "quality_score": 1,
-  "notes": "The response is not an answer to the cross_table_query task \u2014 it's a tool approval prompt asking the user to approve a SQL query execution. None of the required assertions are present in the response text."
+  "notes": "The response is a tool approval request, not an actual answer. It contains none of the required assertions and provides no information about the cross-table query relationships."
 }

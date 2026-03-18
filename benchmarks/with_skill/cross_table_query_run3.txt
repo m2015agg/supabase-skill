@@ -1,24 +1,16 @@
 Here's the FK chain:
 
 ```
-auth.users (Supabase Auth)
-    ↓  (no enforced FK, but logical join)
-bibleai.chat_sessions  (user_id uuid → auth.users.id)
-    ↓  chat_messages.session_id → chat_sessions.id  [enforced FK]
-bibleai.chat_messages
+auth.users (Supabase built-in)
+    └── (implicit) chat_sessions.user_id  [uuid, NOT NULL — no FK constraint enforced in schema]
+            └── chat_messages.session_id  → chat_sessions.id  [FK enforced]
+                    ├── gpt5_debug_logs.session_id  → chat_sessions.id
+                    └── v_routing_analytics.session_id  → chat_sessions.id
 ```
 
 **Key observations:**
 
-- `chat_sessions.user_id` references `auth.users.id` but **no database-level FK constraint** is defined — it's a logical/soft relationship only (common in Supabase when the referenced table is in a different schema, `auth` vs `bibleai`)
-- `chat_messages.session_id → chat_sessions.id` is a **hard FK constraint** (enforced)
-- `chat_messages` also has `resolved_by uuid` which is another soft user reference (no FK)
-
-**To query the full chain:**
-```python
-# Sessions for a user
-await supabase.schema('bibleai').table('chat_sessions')\
-    .select('*, chat_messages(*)')\
-    .eq('user_id', user_id)\
-    .execute()
-```
+- `chat_sessions.user_id` is **not a formal FK** to `auth.users` — it's a bare `uuid NOT NULL`. Supabase often skips the FK to `auth.users` for RLS performance reasons. User scoping is enforced via RLS policy, not a constraint.
+- `chat_messages.session_id → chat_sessions.id` is the **only enforced FK** in this chain.
+- Each session belongs to one user; messages belong to one session. One-to-many at both levels.
+- `chat_messages` is large (~37k rows, **373 MB**) vs `chat_sessions` (~16k rows, 8.8 MB) — messages hold the bulk data including `content text` and multiple `jsonb` debug/metadata columns.

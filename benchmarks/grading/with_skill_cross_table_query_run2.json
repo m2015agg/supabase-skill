@@ -9,5 +9,5 @@
   ],
   "assertions_missed": [],
   "quality_score": 5,
-  "notes": "All required assertions are present. The response provides a thorough, accurate FK chain diagram, explains the loose vs enforced FK constraints, includes a practical SQL query example, and even notes an additional related column (resolved_by). Excellent quality."
+  "notes": "All required assertions are present. The response accurately describes the FK chain between chat_messages, chat_sessions, and users, clearly identifies the foreign key relationships (and lack thereof), and provides additional useful context about the schema."
 }

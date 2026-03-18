@@ -10,5 +10,5 @@
   ],
   "assertions_missed": [],
   "quality_score": 5,
-  "notes": "All required assertions are present. The response includes a complete, correct migration SQL with ALTER TABLE bibleai.plan_blocks, adds a priority column of type integer with DEFAULT 0. The response is well-structured, includes context about the table, and provides the apply command."
+  "notes": "All required assertions are present. The response provides a complete, well-structured migration with correct SQL syntax, explains the safety of NOT NULL DEFAULT 0, includes the file path, and offers next steps."
 }

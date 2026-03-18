@@ -3,7 +3,7 @@
   "assertions_met": [],
   "assertions_missed": [
     "id",
-    "title",
+    "status",
     "created_at",
     "subscription_id",
     "uuid",
@@ -11,5 +11,5 @@
     "timestamp"
   ],
   "quality_score": 1,
-  "notes": "The response contains no schema information whatsoever. It is a permission prompt rather than an answer, failing all required assertions."
+  "notes": "The response did not actually look up or return any schema information. It only requested permission to run a query, without providing any column names, types, or table structure. None of the required assertions are present."
 }

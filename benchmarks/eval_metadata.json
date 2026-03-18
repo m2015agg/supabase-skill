@@ -1,17 +1,17 @@
 {
   "skill": "supabase-skill",
-  "version": "0.7.6",
+  "version": "0.8.0",
   "evals": [
     {
       "id": "schema_lookup",
       "task": "What columns does the episodes table have, including types and constraints?",
-      "assertions": ["id", "title", "created_at", "subscription_id", "uuid", "text", "timestamp"],
+      "assertions": ["id", "status", "created_at", "subscription_id", "uuid", "text", "timestamp"],
       "with_skill_prompt": "You have supabase-skill CLI available. Use it to answer: What columns does the episodes table have, including types and constraints? Run commands like: supabase-skill table episodes",
       "without_skill_prompt": "Use the Supabase MCP tools (mcp__supabase__list_tables with verbose=true, or mcp__supabase__execute_sql) to answer: What columns does the episodes table have, including types and constraints? Use schema 'bibleai'."
     },
     {
       "id": "relationship_traversal",
-      "task": "What tables have foreign keys pointing to the plans table?",
+      "task": "What tables are related to the plans table? Include FK references and name-related tables.",
       "assertions": ["plan_days", "plan_blocks", "plan_day_feedback"],
       "with_skill_prompt": "You have supabase-skill CLI available. Use it to answer: What tables have foreign keys pointing to the plans table? Run commands like: supabase-skill context plans",
       "without_skill_prompt": "Use the Supabase MCP tools to answer: What tables have foreign keys pointing to the plans table? Use mcp__supabase__execute_sql with a query against information_schema or pg_constraint in the bibleai schema."
@@ -27,7 +27,7 @@
       "id": "function_lookup",
       "task": "What RPC functions are available in the bibleai schema and what parameters do they take?",
       "assertions": ["function", "parameter"],
-      "with_skill_prompt": "You have supabase-skill CLI available. Use it to answer: What RPC functions are available and what parameters do they take? Run: supabase-skill search function",
+      "with_skill_prompt": "You have supabase-skill CLI available. Use it to answer: What RPC functions are available and what parameters do they take? Run: supabase-skill functions",
       "without_skill_prompt": "Use the Supabase MCP tools to answer: What RPC functions are available in the bibleai schema and what parameters do they take? Use mcp__supabase__execute_sql to query pg_proc or information_schema.routines."
     },
     {

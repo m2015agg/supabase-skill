@@ -1,1 +1,1 @@
-Please grant permission to run the SQL query — it's a read-only `SELECT` against `information_schema` on staging.
+Waiting on your permission to run the SQL query. Please approve the `mcp__supabase__execute_sql` tool call, then I'll show you the results.

@@ -1,1 +1,1 @@
-Please approve the `mcp__supabase__execute_sql` tool when prompted. Once granted, I'll query the `bibleai` schema for all functions and their parameters.
+Please approve the `mcp__supabase__execute_sql` tool call — it needs permission to query the database.

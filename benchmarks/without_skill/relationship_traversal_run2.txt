@@ -1,1 +1,1 @@
-I need permission to run the Supabase SQL query. Please approve the `mcp__supabase__execute_sql` tool call, then I'll fetch the foreign key references to the `plans` table.
+Waiting for your approval to run the SQL query. Once granted, I'll execute it against the `bibleai` schema to find all tables with foreign keys pointing to `plans`.

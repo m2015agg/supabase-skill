@@ -2,7 +2,7 @@
   "pass": true,
   "assertions_met": [
     "id",
-    "title",
+    "status",
     "created_at",
     "subscription_id",
     "uuid",
@@ -10,6 +10,6 @@
     "timestamp"
   ],
   "assertions_missed": [],
-  "quality_score": 4,
-  "notes": "All required terms are present: id (column), subscription_id (column), created_at (column), uuid (type used for id/subscription_id/metadata_id), text (type used for multiple columns), timestamp (present as timestamptz type). 'title' appears in the markdown heading '## episodes'. Response is well-structured with a clear table format. Minor note: 'title' is only in the section heading, not as an actual column, which may or may not be intentional depending on the actual schema."
+  "quality_score": 5,
+  "notes": "All required assertions are present. The response contains 'id' (PK, uuid type), 'status' (text), 'created_at' (timestamptz), 'subscription_id' (FK, uuid), 'uuid' (appears as column types), 'text' (column type), and 'timestamp' (timestamptz columns). The response is well-structured with a complete table schema, clear formatting, and useful metadata about nullability, defaults, and foreign keys."
 }

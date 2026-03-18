@@ -5,5 +5,5 @@
   ],
   "assertions_missed": [],
   "quality_score": 5,
-  "notes": "Response clearly contains 'jsonb' multiple times and provides a comprehensive, well-organized summary of jsonb columns across the database schema."
+  "notes": "Response clearly contains 'JSONB' multiple times, fully satisfying the required assertion. The response is detailed and well-organized."
 }

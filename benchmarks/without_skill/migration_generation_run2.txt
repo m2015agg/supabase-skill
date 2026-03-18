@@ -1,1 +1,30 @@
-Error: Reached max turns (10)
+I need write permission to create the migration file. Please approve, or here's the migration SQL you can create manually:
+
+**File:** `supabase/migrations/20260318000000_add_priority_to_plan_blocks.sql`
+
+```sql
+-- Add priority column to plan_blocks for ordering blocks within a day
+ALTER TABLE bibleai.plan_blocks
+    ADD COLUMN priority integer NOT NULL DEFAULT 0;
+```
+
+**Current `plan_blocks` schema** (from local snapshot):
+
+| Column | Type | Nullable | Default |
+|--------|------|----------|---------|
+| id | uuid | NOT NULL | gen_random_uuid() |
+| plan_day_id | uuid | NOT NULL | |
+| block_type_id | uuid | NOT NULL | |
+| block_order | integer | NOT NULL | |
+| target_duration_seconds | integer | NOT NULL | |
+| content | jsonb | NOT NULL | |
+| completed_at | timestamptz | nullable | |
+| created_at | timestamptz | NOT NULL | now() |
+| updated_at | timestamptz | NOT NULL | now() |
+| status | text | NOT NULL | 'locked' |
+
+The migration adds `priority integer NOT NULL DEFAULT 0` — safe to apply on existing rows since the default fills all current values. Apply with:
+
+```bash
+supabase migration up --project-ref jugnzbfalgeyaqrhlvgr
+```

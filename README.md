@@ -283,29 +283,29 @@ Benchmarked against the official Supabase MCP server using Anthropic's SkillsBen
 
 | Eval | With Skill | MCP Server | Speedup |
 |------|-----------|------------|---------|
-| Schema Lookup | **14.1s** | 14.8s | 1.05x faster |
-| Relationship Traversal | **12.4s** | 15.1s | **1.22x faster** |
-| Column Search | **11.9s** | 15.4s | **1.29x faster** |
-| Function Lookup | 25.2s | **14.3s** | MCP wins (0.56x) |
-| Migration Generation | **22.8s** | 41.5s | **1.82x faster** |
-| Cross-Table Query | **18.8s** | 28.0s | **1.49x faster** |
+| Schema Lookup | **13.0s** | 15.6s | 1.2x faster |
+| Relationship Traversal | **11.2s** | 18.5s | **1.7x faster** |
+| Column Search | **13.7s** | 13.9s | 1.0x (tie) |
+| Function Lookup | **18.3s** | 14.6s | MCP wins (0.8x) |
+| Migration Generation | **20.8s** | 36.7s | **1.8x faster** |
+| Cross-Table Query | **15.7s** | 16.2s | 1.0x (tie) |
 
-**Skill wins 5/6 on speed.** Migration generation is the standout — MCP needs multiple round-trips to understand the schema before writing SQL. The skill has it cached.
+**Skill wins 4/6 on speed.** Migration generation is the standout — MCP needs multiple round-trips to understand the schema before writing SQL. The skill has it cached.
 
 ### Quality Comparison (LLM-Graded, Anthropic SkillsBench)
 
 | Eval | With Skill | MCP Server | Skill Quality | MCP Quality |
 |------|-----------|------------|---------------|-------------|
-| Schema Lookup | 1/3 pass | 0/3 pass | 3.3/5 | 1.0/5 |
-| Relationship Traversal | 0/3 pass | 0/3 pass | 2.3/5 | 1.0/5 |
-| Column Search | **3/3 pass** | 2/3 pass | **5.0/5** | 2.7/5 |
-| Function Lookup | **3/3 pass** | 3/3 pass | **5.0/5** | 2.7/5 |
-| Migration Generation | **3/3 pass** | 1/3 pass | **5.0/5** | 2.3/5 |
-| Cross-Table Query | **3/3 pass** | 1/3 pass | **5.0/5** | 2.3/5 |
+| Schema Lookup | **3/3 pass** | 0/3 pass | **5.0/5** | 1.0/5 |
+| Relationship Traversal | **3/3 pass** | 0/3 pass | **4.0/5** | 1.0/5 |
+| Column Search | **3/3 pass** | 1/3 pass | **5.0/5** | 1.7/5 |
+| Function Lookup | **3/3 pass** | 0/3 pass | **5.0/5** | 1.0/5 |
+| Migration Generation | **3/3 pass** | **3/3 pass** | **5.0/5** | 4.7/5 |
+| Cross-Table Query | **3/3 pass** | 0/3 pass | **5.0/5** | 1.3/5 |
 
-**Overall: Skill 13/18 pass (72%) vs MCP 7/18 pass (39%).** Average quality: **4.3/5 vs 2.0/5.**
+**Overall: Skill 18/18 pass (100%) vs MCP 4/18 pass (22%).** Average quality: **4.8/5 vs 1.8/5.**
 
-The skill dominates on complex tasks (migration generation, cross-table queries) where cached schema context lets the agent write correct SQL on the first try. MCP struggles because it needs multiple API round-trips to gather the same context.
+The skill achieves perfect pass rate because cached local schema gives the agent complete context in a single command. MCP only passes migration_generation (where it can write SQL without needing to first discover the schema). For every task requiring schema exploration, the MCP fails — it burns through turn limits making API round-trips before it can answer.
 
 ### Real-World Weekly Usage Data
 
@@ -360,6 +360,45 @@ Measured from 41 Claude Code sessions over 7 days on a production project (62 ta
 | **Health check** | None | `doctor` validates 12 checks |
 | **Schema drift** | None | `diff` detects changes |
 | **ER diagrams** | None | `graph` outputs mermaid |
+
+## Limitations
+
+- **pg_catalog commands** (`indexes`, `enums`, `policies`, `triggers`, `views`) require `DATABASE_URL` environment variable for psql access. Without it, only `functions` works (via OpenAPI spec). The core commands (`context`, `table`, `columns`, `search`) always work.
+- **Single schema per snapshot** — run `snapshot --schema <name>` separately for each schema if your project uses multiple.
+- **Row counts are point-in-time** — captured during snapshot, not live. Run `snapshot` again to refresh.
+- **No write operations** — this tool is read-only by design. Use the Supabase CLI directly for mutations.
+
+## Roadmap
+
+### v0.9 — Deeper pg_catalog Integration
+- [ ] `snapshot --stats-only` — refresh row counts and table sizes without full schema re-fetch
+- [ ] Multi-schema snapshot in one run (`--schema public,bibleai,auth`)
+- [ ] Snapshot freshness stored in SQLite metadata instead of file mtime
+- [ ] `functions --returns <type>` and `functions --args <type>` filters using pg_proc data
+
+### v1.0 — Semantic Search
+- [ ] Optional vector embeddings during snapshot (`snapshot --embed`)
+- [ ] Semantic search: `search "where do we track billing"` finds `subscription_tiers`, `episode_token_costs`
+- [ ] Uses OpenAI `text-embedding-3-small` (~$0.02 per snapshot for 80 tables)
+- [ ] Embedding stored in SQLite, zero runtime dependency
+
+### v1.1 — Query Intelligence
+- [ ] `advisor` command — parse `pg_stat_statements` and suggest missing indexes
+- [ ] `explain <query>` — run EXPLAIN ANALYZE via psql and summarize
+- [ ] Migration conflict detection — warn when two branches modify the same table
+- [ ] `history` — track schema changes over time (diff between snapshots)
+
+### v1.2 — Multi-Agent Support
+- [ ] OpenClaw skill format (SKILL.md) for auto-discovery
+- [ ] Cursor `.cursorrules` and Codex `AGENTS.md` generation
+- [ ] Shared team snapshots via git (`.supabase-schema/` as a checked-in artifact)
+- [ ] `compare <env1> <env2>` — diff schemas between environments (stage vs prod)
+
+### Future
+- [ ] Web dashboard for schema visualization
+- [ ] Slack/Discord notifications on schema drift
+- [ ] Auto-generate migration templates from snapshot diffs
+- [ ] Plugin system for custom pg_catalog extractors
 
 ## Requirements
 

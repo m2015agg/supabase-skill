@@ -1,18 +1,16 @@
-Needs write permission for migrations. The migration SQL to add the column is:
+Looks like write permission needs approval. Once granted, the migration will be:
 
 ```sql
+-- supabase/migrations/20260318000000_add_priority_to_plan_blocks.sql
 ALTER TABLE bibleai.plan_blocks
     ADD COLUMN priority integer NOT NULL DEFAULT 0;
 ```
 
-**Table summary from the schema lookup:**
+**`plan_blocks` schema summary:**
+- 10 existing columns (id, plan_day_id, block_type_id, block_order, target_duration_seconds, content, completed_at, created_at, updated_at, status)
+- New column: `priority integer NOT NULL DEFAULT 0`
 
-- `plan_blocks` has 10 columns, ~13,881 rows
-- The new `priority` column should be `integer NOT NULL DEFAULT 0` (consistent with the existing `block_order` integer column pattern)
-
-To apply once you approve the file write:
+To apply after the file is created:
 ```bash
-supabase migration up --project-ref jugnzbfalgeyaqrhlvgr   # stage first
+supabase migration up --project-ref jugnzbfalgeyaqrhlvgr  # stage
 ```
-
-Would you like me to write the migration file to `supabase/migrations/20260318000000_add_priority_to_plan_blocks.sql`?

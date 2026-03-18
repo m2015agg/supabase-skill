@@ -1,12 +1,11 @@
 {
-  "pass": false,
+  "pass": true,
   "assertions_met": [
     "plan_days",
-    "plan_blocks"
-  ],
-  "assertions_missed": [
+    "plan_blocks",
     "plan_day_feedback"
   ],
-  "quality_score": 2,
-  "notes": "Response correctly identifies plan_days and plan_blocks as tables with foreign keys to plans, but omits plan_day_feedback entirely. The response is incomplete \u2014 it misses a third table that also has a relationship to plans."
+  "assertions_missed": [],
+  "quality_score": 4,
+  "notes": "All three required terms are present. plan_days and plan_blocks are correctly identified as related to plans (with accurate note about direct vs indirect FK). plan_day_feedback is mentioned but described as having no declared FK constraint, which is a notable caveat but the term is present and acknowledged as related by name."
 }

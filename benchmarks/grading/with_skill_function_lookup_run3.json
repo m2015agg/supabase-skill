@@ -6,5 +6,5 @@
   ],
   "assertions_missed": [],
   "quality_score": 5,
-  "notes": "Response comprehensively lists RPC functions organized by category with clear parameter documentation. Both required terms appear extensively throughout the response."
+  "notes": "Response thoroughly covers both required assertions. It lists 48 RPC functions with their parameters in well-organized tables by category. Both 'function' and 'parameter' appear extensively throughout the response."
 }

@@ -5,5 +5,5 @@
     "jsonb"
   ],
   "quality_score": 1,
-  "notes": "The response contains no actual answer - it's just a permission request to run a SQL query. It doesn't mention 'jsonb' or provide any column search results."
+  "notes": "The response does not contain 'jsonb' or any relevant content about column search. It is a tool permission prompt, not an actual answer to the task."
 }

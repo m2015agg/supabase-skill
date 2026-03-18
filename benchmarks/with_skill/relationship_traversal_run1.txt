@@ -2,9 +2,9 @@ Two tables have foreign keys pointing to `plans`:
 
 | Table | Column | Points To |
 |-------|--------|-----------|
-| `plan_days` | `plan_days.plan_id` | `plans.id` |
-| `plan_blocks` | `plan_blocks.plan_day_id` | `plans.id` |
+| `plan_days` | `plan_id` | `plans.id` |
+| `plan_blocks` | `plan_day_id` | `plans.id` (indirect — via `plan_days`) |
 
-Note: `plan_blocks` actually references `plan_days` (not `plans` directly) — the supabase-skill output shows it in the "Referenced by" section because of the transitive relationship through `plan_days.plan_id`.
+Note: `plan_blocks` actually has its FK pointing to `plan_days.plan_day_id`, not directly to `plans.id` — so the direct reference is only `plan_days`.
 
-The direct FK chain is: **plans → plan_days → plan_blocks**
+There are also name-related tables with no declared FK constraints: `plan_day_feedback`, `plan_block_types`, `plan_prompt_recipes`, `plan_rag_recipes`.

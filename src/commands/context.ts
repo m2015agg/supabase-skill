@@ -112,13 +112,22 @@ function runSqlite(schemaDir: string, query: string, depth: number, jsonMode: bo
     const related = getRelatedTables(db, table, depth);
     const info = getTableInfo(db, table);
 
+    // Also find tables with matching name prefix that may lack FK constraints
+    const nameRelated = allTables
+      .filter((t) => t !== table && (t.startsWith(table + "_") || t.startsWith(table.replace(/s$/, "") + "_")))
+      .filter((t) => !related.some((r) => r.table_name === t));
+    for (const nr of nameRelated) {
+      related.push({ table_name: nr, direction: "name-related", from_column: "", to_column: "", depth: 0 });
+    }
+
     write(`## ${table}\n`);
     renderColumnsFromDb(cols, info);
 
     const refs = related.filter((r) => r.direction === "references");
     const refBy = related.filter((r) => r.direction === "referenced by");
+    const nameRel = related.filter((r) => r.direction === "name-related");
 
-    if (refs.length > 0 || refBy.length > 0) {
+    if (refs.length > 0 || refBy.length > 0 || nameRel.length > 0) {
       write("### Related Tables\n\n");
       if (refs.length > 0) {
         write("**References (this table points to):**\n");
@@ -128,6 +137,11 @@ function runSqlite(schemaDir: string, query: string, depth: number, jsonMode: bo
       if (refBy.length > 0) {
         write("**Referenced by (points to this table):**\n");
         for (const r of refBy) write(`  ← ${r.table_name} via ${r.table_name}.${r.from_column} → ${r.to_column}\n`);
+        write("\n");
+      }
+      if (nameRel.length > 0) {
+        write("**Name-related (no FK constraint declared):**\n");
+        for (const r of nameRel) write(`  ~ ${r.table_name}\n`);
         write("\n");
       }
     }
@@ -244,7 +258,7 @@ export function contextCommand(): Command {
     .description("Get comprehensive context for a table or topic — related tables, FKs, functions, column details")
     .argument("<query>", "Table name or topic (e.g., 'episodes', 'user subscriptions', 'chat')")
     .option("--dir <dir>", "Schema directory", ".supabase-schema")
-    .option("--depth <n>", "FK traversal depth", "2")
+    .option("--depth <n>", "FK traversal depth", "3")
     .option("--json", "Output as JSON")
     .action((query: string, opts: { dir: string; depth: string; json?: boolean }) => {
       const schemaDir = join(process.cwd(), opts.dir);

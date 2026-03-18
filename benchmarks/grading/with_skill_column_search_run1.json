@@ -5,5 +5,5 @@
   ],
   "assertions_missed": [],
   "quality_score": 5,
-  "notes": "Response thoroughly covers all jsonb columns across the database, organized by category with table names, column names, and NOT NULL constraints noted. Comprehensive and well-structured."
+  "notes": "Response clearly mentions 'jsonb' multiple times, provides detailed information about jsonb columns across tables, includes counts, table names, column names, and distinguishes NOT NULL constraints."
 }

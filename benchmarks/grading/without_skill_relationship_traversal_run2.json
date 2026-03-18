@@ -7,5 +7,5 @@
     "plan_day_feedback"
   ],
   "quality_score": 1,
-  "notes": "The response contains no actual content \u2014 it only asks for permission to run a query. None of the required table names (plan_days, plan_blocks, plan_day_feedback) are mentioned. The response is a non-answer that fails all assertions."
+  "notes": "The response contains no actual content \u2014 it's just a waiting message asking for approval to run a query. None of the required table names (plan_days, plan_blocks, plan_day_feedback) are present."
 }

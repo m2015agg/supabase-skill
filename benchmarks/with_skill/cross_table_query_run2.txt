@@ -1,29 +1,25 @@
 Here's the FK chain:
 
 ```
-auth.users (Supabase Auth)
-    │
-    │  user_id (no FK constraint — loose reference)
-    ▼
-bibleai.chat_sessions
-    id  ←── session_id (FK)
-    │
-    ▼
-bibleai.chat_messages
+auth.users (Supabase auth)
+    ↓ (no FK, application-level join on user_id)
+chat_sessions
+  - user_id: uuid (references auth user, no FK constraint)
+  - is_pinned, is_deleted, title, etc.
+    ↓ chat_messages.session_id → chat_sessions.id
+chat_messages
+  - session_id: uuid FK → chat_sessions.id
+  - role, content, feedback_type, etc.
 ```
 
 **Key observations:**
 
-- `chat_sessions.user_id` → `auth.users.id` — **no enforced FK constraint** in the schema snapshot (Supabase auth tables live in a separate schema, so RLS policies enforce this instead)
-- `chat_messages.session_id` → `chat_sessions.id` — **proper FK constraint** enforced at the DB level
-- `chat_messages` has no direct `user_id` column — you must join through `chat_sessions` to get the user
+1. **`chat_sessions.user_id`** — no FK constraint to `auth.users`. It's a UUID column that's enforced at the application layer (via RLS policies), not at the DB level.
 
-**To query messages for a user:**
-```sql
-SELECT m.*
-FROM bibleai.chat_messages m
-JOIN bibleai.chat_sessions s ON m.session_id = s.id
-WHERE s.user_id = '77b036d1-32a2-46f8-b1c6-a17e20752c8c';
-```
+2. **`chat_messages.session_id`** — hard FK → `chat_sessions.id`. Messages cannot exist without a session.
 
-Also notable: `chat_messages.resolved_by` (uuid) is another loose user reference — it stores the ID of whoever resolved a feedback item, but no FK to auth.users either.
+3. **No direct user link on messages** — to get a user's messages, you must join through sessions: `users → chat_sessions (user_id) → chat_messages (session_id)`.
+
+4. **`chat_messages.resolved_by`** — also a uuid referencing a user, but again no FK constraint.
+
+**Scale:** ~16k sessions, ~37k messages (373 MB — messages dominate storage by far).

@@ -1,13 +1,9 @@
-It looks like the `mcp__supabase__execute_sql` permission hasn't been granted yet. You can approve it in the permissions dialog, or allow it permanently in your Claude Code settings.
+It looks like I need permission to run MCP SQL queries. Please approve the `mcp__supabase__execute_sql` tool call when prompted, then I can fetch the results.
 
-Once approved, the query I'm running is:
+If you'd prefer not to grant that permission, an alternative is:
 
-```sql
-SELECT table_name, column_name, is_nullable, column_default
-FROM information_schema.columns
-WHERE table_schema = 'bibleai'
-  AND data_type = 'jsonb'
-ORDER BY table_name, column_name;
+```bash
+supabase-skill columns --type jsonb
 ```
 
-Please approve the tool use and I'll re-run it.
+This uses the local schema snapshot (`.supabase-schema/`) without hitting the live database — faster and no permission needed.

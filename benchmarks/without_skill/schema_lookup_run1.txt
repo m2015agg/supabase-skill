@@ -1,1 +1,1 @@
-Awaiting your permission to run the SQL query. Please approve the `mcp__supabase__execute_sql` tool call, then I'll return the full column list.
+Please grant permission for `mcp__supabase__execute_sql` — it needs to run a read-only `SELECT` against `information_schema.columns` to describe the `episodes` table.

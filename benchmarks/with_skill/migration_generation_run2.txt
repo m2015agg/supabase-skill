@@ -1,15 +1,21 @@
-I need permission to create the migration file. Here's exactly what it will contain:
-
-**File:** `supabase/migrations/20260318000000_add_priority_to_plan_blocks.sql`
+Looks like write permission needs to be granted. The migration SQL would be:
 
 ```sql
+-- supabase/migrations/20260318000000_add_priority_to_plan_blocks.sql
 ALTER TABLE bibleai.plan_blocks
     ADD COLUMN priority integer NOT NULL DEFAULT 0;
 ```
 
-The `plan_blocks` table currently has 10 columns (id, plan_day_id, block_type_id, block_order, target_duration_seconds, content, completed_at, created_at, updated_at, status). The new `priority` column will be an `integer NOT NULL DEFAULT 0`.
+**`plan_blocks` schema summary:** 10 columns, uuid PK, FKs to `plan_days` and `plan_block_types`, ~13.8k rows.
 
-Once you approve file creation, you can apply it with:
+**Migration details:**
+- File: `supabase/migrations/20260318000000_add_priority_to_plan_blocks.sql`
+- `NOT NULL DEFAULT 0` — safe to add to existing rows (all get `0`)
+- No index needed unless you plan to sort/filter by priority frequently
+
+To apply to staging:
 ```bash
-supabase migration up --project-ref jugnzbfalgeyaqrhlvgr  # stage
+supabase migration up --project-ref jugnzbfalgeyaqrhlvgr
 ```
+
+Want me to create the file (once permissions allow) and/or apply it to staging?

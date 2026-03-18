@@ -3,7 +3,7 @@
   "assertions_met": [],
   "assertions_missed": [
     "id",
-    "title",
+    "status",
     "created_at",
     "subscription_id",
     "uuid",
@@ -11,5 +11,5 @@
     "timestamp"
   ],
   "quality_score": 1,
-  "notes": "The response did not provide any schema information. It only asked for tool approval without returning any actual data about the table columns."
+  "notes": "Response contains no schema information whatsoever. It is merely a request for tool approval, not an actual answer to the schema_lookup task."
 }

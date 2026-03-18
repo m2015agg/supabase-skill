@@ -1,22 +1,15 @@
-Found **45 jsonb columns** across **26 tables**. Here's a summary of the key clusters:
+Here are all **45 JSONB columns** across **26 tables**:
 
-**Chat/Session data:**
-- `chat_messages` — `context_sources`, `debug_log`, `processing_metadata`, `routing_metadata`
-- `chat_sessions` — `context_summary`, `metadata`
+**Key highlights:**
 
-**Transcription:**
-- `episode_chunks` — `char_time_map`, `word_segments`
-- `transcribe` — `diarized_json`, `transcript_json`
+- **`chat_messages`** — 4 JSONB columns: `context_sources`, `debug_log`, `processing_metadata`, `routing_metadata`
+- **`plan_blocks`** — `content` (NOT NULL) — the core block data
+- **`plans`** — `source_details` (NOT NULL), `generation_metadata`
+- **`plan_block_types`** — `output_schema` (NOT NULL), `age_overrides`
+- **`plan_block_recipes`** — `recipe_definition` (NOT NULL), `age_overrides`
+- **`gpt5_debug_logs`** — `json_schema`, `parsed_response`, `raw_response`
+- **`transcribe`** — `diarized_json`, `transcript_json` — raw WhisperX output
+- **`episode_chunks`** — `word_segments`, `char_time_map` — timing data
+- **`lizi_run_logs`** — 5 JSONB columns for run state and results
 
-**Plans/Blocks:**
-- `plan_blocks.content` (NOT NULL) — block content
-- `plan_block_types.output_schema` (NOT NULL) — block type schemas
-- `plan_block_recipes.recipe_definition` (NOT NULL) — recipe definitions
-- `plans.source_details` (NOT NULL) — plan source config
-
-**Debugging/Logs:**
-- `gpt5_debug_logs` — `json_schema`, `parsed_response`, `raw_response`
-- `lizi_run_logs` — `config`, `error_details`, `queue_stats`, `results_summary`, `structured_log`
-
-**Entitlements:**
-- `role_entitlements.value`, `user_entitlements.value`, `effective_entitlements.value` — all store entitlement values as jsonb
+NOT NULL constraints appear on: `plan_blocks.content`, `plan_block_types.output_schema`, `plan_block_recipes.recipe_definition`, `plans.source_details`, `role_entitlements.value`, `user_entitlements.value`, `transcript_preprocessed.position_map`.

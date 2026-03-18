@@ -9,5 +9,5 @@
   ],
   "assertions_missed": [],
   "quality_score": 5,
-  "notes": "All required assertions are present. The response clearly explains the FK chain between chat_sessions, chat_messages, and users, distinguishes between enforced and soft foreign key relationships, and provides a practical query example."
+  "notes": "All required assertions are present. The response accurately describes the FK chain, correctly notes that chat_sessions.user_id lacks a formal FK constraint to auth.users, and explains the enforced FK between chat_messages and chat_sessions. Includes useful additional context about RLS and table sizes."
 }

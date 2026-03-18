@@ -1,1 +1,1 @@
-Waiting on your permission to run `mcp__supabase__execute_sql`. Please approve the tool call and I'll return the results.
+It looks like the `mcp__supabase__execute_sql` tool needs your permission to run. Please approve the tool call, or let me know if you'd like me to use the Supabase CLI (`supabase db execute`) instead.

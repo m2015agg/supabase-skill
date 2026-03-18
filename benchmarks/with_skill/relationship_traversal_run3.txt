@@ -1,8 +1,10 @@
 Two tables have foreign keys pointing to `plans`:
 
-| Table | FK Column | Notes |
-|-------|-----------|-------|
-| `plan_days` | `plan_days.plan_id → plans.id` | The daily schedule entries for a plan |
-| `plan_blocks` | `plan_blocks.plan_day_id → plans.id` | Individual content blocks (note: points via `plan_day_id`, likely chained through `plan_days`) |
+| Table | Column | Via FK |
+|-------|--------|--------|
+| `plan_days` | `plan_id` | → `plans.id` |
+| `plan_blocks` | `plan_day_id` | → `plans.id` (indirect, through plan_days) |
 
-The `plans` table itself has one outbound FK: `block_recipe_id → plan_block_recipes.id`.
+Note: `plan_blocks` technically points to `plan_days.plan_day_id`, not directly to `plans.id` — the supabase-skill inferred the relationship. Direct FK references to `plans.id` are only from `plan_days`.
+
+There are also name-related tables with no declared FK constraint: `plan_block_types`, `plan_day_feedback`, `plan_prompt_recipes`, `plan_rag_recipes`.

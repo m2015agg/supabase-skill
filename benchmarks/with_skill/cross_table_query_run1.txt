@@ -2,26 +2,31 @@ Here's the FK chain:
 
 ```
 auth.users (Supabase Auth)
-    │
-    │ user_id (uuid, no FK constraint)
-    ▼
-chat_sessions  (~16,472 rows, 8.8 MB)
-    │  id (PK)
-    │
-    │ session_id → chat_sessions.id
-    ▼
-chat_messages  (~37,562 rows, 373 MB)
-       id (PK)
+    ↓  (no FK constraint — application-level join only)
+chat_sessions
+  • user_id uuid NOT NULL  ← ties session to a user (no enforced FK to auth.users)
+  • 16,472 rows | 8,824 kB
+    ↓  chat_messages.session_id → chat_sessions.id  (enforced FK)
+chat_messages
+  • session_id uuid NOT NULL FK → chat_sessions.id
+  • 37,562 rows | 373 MB
 ```
 
 **Key observations:**
 
-1. **`chat_sessions.user_id`** — uuid pointing to the auth user, but **no FK constraint** defined in the schema. It's a logical relationship only (no referential integrity enforced at DB level).
+1. **`chat_sessions.user_id`** — no FK constraint to `auth.users`. It's a UUID column that references users by convention, not enforced at the DB level.
 
-2. **`chat_messages.session_id → chat_sessions.id`** — proper FK constraint enforced.
+2. **`chat_messages.session_id → chat_sessions.id`** — proper enforced FK. Messages cannot exist without a parent session.
 
-3. **No direct user FK on `chat_messages`** — user context flows through the session: `chat_messages → chat_sessions.user_id`.
+3. **No direct user link on `chat_messages`** — to find all messages for a user, you join through sessions: `chat_messages → chat_sessions (session_id) → filter by user_id`.
 
-4. **Side tables hanging off `chat_sessions`:** `gpt5_debug_logs` and `v_routing_analytics` also reference `chat_sessions.id`.
+4. **`chat_messages.resolved_by`** — a second user UUID on messages (who resolved feedback), also un-constrained.
 
-5. `chat_messages` is by far the largest table at **373 MB** vs 8.8 MB for sessions — messages are ~42x heavier per row due to `content text`, `context_sources jsonb`, and `processing_metadata jsonb` columns.
+**Typical query pattern:**
+```sql
+SELECT m.*
+FROM bibleai.chat_messages m
+JOIN bibleai.chat_sessions s ON s.id = m.session_id
+WHERE s.user_id = '<user_uuid>'
+  AND s.is_deleted = false;
+```

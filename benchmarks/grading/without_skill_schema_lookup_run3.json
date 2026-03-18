@@ -3,7 +3,7 @@
   "assertions_met": [],
   "assertions_missed": [
     "id",
-    "title",
+    "status",
     "created_at",
     "subscription_id",
     "uuid",
@@ -11,5 +11,5 @@
     "timestamp"
   ],
   "quality_score": 1,
-  "notes": "The response did not provide any schema information. It only asked for permission to run a query instead of returning the actual schema data with the required fields."
+  "notes": "The response contains no schema information whatsoever \u2014 it's a permission prompt, not an answer. All required assertions are missed."
 }

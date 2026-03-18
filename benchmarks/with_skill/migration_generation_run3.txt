@@ -1,14 +1,13 @@
-It looks like I need permission to write the file. Could you approve the write request so I can create the migration file at `supabase/migrations/20260318000000_add_priority_to_plan_blocks.sql`?
-
-The SQL I'll write is:
+Waiting for your approval to write the file. The migration content will be:
 
 ```sql
 ALTER TABLE bibleai.plan_blocks
-  ADD COLUMN priority integer NOT NULL DEFAULT 0;
+    ADD COLUMN priority integer NOT NULL DEFAULT 0;
 ```
 
-This adds a non-nullable `priority integer` column with a default of `0` to `bibleai.plan_blocks`. The `NOT NULL DEFAULT 0` ensures existing rows get the default without needing a backfill step. Once you approve, you can apply it with:
+File: `supabase/migrations/20260318000000_add_priority_to_plan_blocks.sql`
 
+Once approved, apply it to staging with:
 ```bash
-supabase migration up --project-ref jugnzbfalgeyaqrhlvgr  # stage first
+supabase migration up --project-ref jugnzbfalgeyaqrhlvgr
 ```

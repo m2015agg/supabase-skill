@@ -1,6 +1,4 @@
-Here's the `episodes` table schema:
-
-## episodes (15 columns, ~397 rows)
+The `episodes` table has **15 columns**:
 
 | Column | Type | Nullable | Default |
 |--------|------|----------|---------|
@@ -9,17 +7,19 @@ Here's the `episodes` table schema:
 | `provider_episode_id` | text | NOT NULL | — |
 | `discovered_at` | timestamptz | nullable | `now()` |
 | `downloaded_at` | timestamptz | nullable | — |
-| `status` | text | nullable | `new` |
+| `status` | text | nullable | `'new'` |
 | `audio_url` | text | nullable | — |
 | `file_path` | text | nullable | — |
 | `duration_seconds` | integer | nullable | — |
-| `duration_minutes` | integer | nullable | — |
 | `created_at` | timestamptz | nullable | `now()` |
 | `updated_at` | timestamptz | nullable | `now()` |
 | `processing_metadata` | jsonb | nullable | — |
+| `duration_minutes` | integer | nullable | — |
 | `metadata_id` **FK** | uuid | nullable | — |
 | `error_message` | text | nullable | — |
 
-**Foreign keys:** `subscription_id → subscriptions.id`, `metadata_id → episode_metadata.id`
-
-**Only 3 NOT NULL columns:** `id`, `subscription_id`, `provider_episode_id` — everything else is nullable.
+**Key points:**
+- Only 3 NOT NULL columns: `id`, `subscription_id`, `provider_episode_id`
+- FKs: `subscription_id → subscriptions.id`, `metadata_id → episode_metadata.id` (nullable)
+- `status` defaults to `'new'`
+- ~397 rows, heavily referenced by 21 other tables/views

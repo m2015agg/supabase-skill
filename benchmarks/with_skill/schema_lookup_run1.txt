@@ -1,6 +1,6 @@
 Here's the `episodes` table schema:
 
-**15 columns | ~397 rows**
+## episodes — 15 columns, ~397 rows
 
 | Column | Type | Nullable | Default |
 |--------|------|----------|---------|
@@ -9,7 +9,7 @@ Here's the `episodes` table schema:
 | `provider_episode_id` | text | NOT NULL | — |
 | `discovered_at` | timestamptz | nullable | `now()` |
 | `downloaded_at` | timestamptz | nullable | — |
-| `status` | text | nullable | `'new'` |
+| `status` | text | nullable | `new` |
 | `audio_url` | text | nullable | — |
 | `file_path` | text | nullable | — |
 | `duration_seconds` | integer | nullable | — |
@@ -22,6 +22,6 @@ Here's the `episodes` table schema:
 
 **Foreign keys:**
 - `subscription_id` → `subscriptions.id`
-- `metadata_id` → `episode_metadata.id` (nullable — cleared during cascade delete)
+- `metadata_id` → `episode_metadata.id` (nullable — cleared on cascade delete)
 
-**NOT NULL constraints** (required on insert): `id`, `subscription_id`, `provider_episode_id`
+**Only 3 NOT NULL columns:** `id`, `subscription_id`, `provider_episode_id`. Everything else is nullable. The `status` column defaults to `'new'` with no enum constraint (plain `text`).

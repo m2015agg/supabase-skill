@@ -1,25 +1,29 @@
-Here's a summary of the `episodes` table:
+Here's the `episodes` table schema:
 
-**15 columns | ~397 rows | 4.2 MB**
+## episodes table — 15 columns
 
-| Column | Type | Nullable | Notes |
-|--------|------|----------|-------|
-| `id` **PK** | uuid | NOT NULL | `gen_random_uuid()` |
-| `subscription_id` **FK** | uuid | NOT NULL | → subscriptions.id |
-| `provider_episode_id` | text | NOT NULL | External podcast provider ID |
-| `metadata_id` **FK** | uuid | nullable | → episode_metadata.id |
-| `status` | text | nullable | Default: `new` |
-| `audio_url` | text | nullable | |
-| `file_path` | text | nullable | Local file path after download |
-| `duration_seconds` | integer | nullable | |
-| `duration_minutes` | integer | nullable | |
-| `processing_metadata` | jsonb | nullable | AI analysis results |
-| `error_message` | text | nullable | |
-| `discovered_at` | timestamptz | nullable | Default: `now()` |
-| `downloaded_at` | timestamptz | nullable | |
-| `created_at` | timestamptz | nullable | Default: `now()` |
-| `updated_at` | timestamptz | nullable | Default: `now()` |
+| Column | Type | Nullable | Default | Notes |
+|--------|------|----------|---------|-------|
+| `id` **PK** | `uuid` | NOT NULL | `gen_random_uuid()` | |
+| `subscription_id` **FK** | `uuid` | NOT NULL | | → `subscriptions.id` |
+| `provider_episode_id` | `text` | NOT NULL | | |
+| `discovered_at` | `timestamptz` | nullable | `now()` | |
+| `downloaded_at` | `timestamptz` | nullable | | |
+| `status` | `text` | nullable | `'new'` | |
+| `audio_url` | `text` | nullable | | |
+| `file_path` | `text` | nullable | | |
+| `duration_seconds` | `integer` | nullable | | |
+| `duration_minutes` | `integer` | nullable | | |
+| `created_at` | `timestamptz` | nullable | `now()` | |
+| `updated_at` | `timestamptz` | nullable | `now()` | |
+| `processing_metadata` | `jsonb` | nullable | | AI analysis results |
+| `metadata_id` **FK** | `uuid` | nullable | | → `episode_metadata.id` |
+| `error_message` | `text` | nullable | | |
 
-**Key constraints:** Only `id` and `subscription_id` + `provider_episode_id` are NOT NULL. Everything else is nullable.
+**Key constraints:**
+- `id` is the primary key with auto-generated UUID
+- `subscription_id` is the only NOT NULL FK (required)
+- `provider_episode_id` is NOT NULL (external ID from podcast provider)
+- All other columns are nullable
 
-**Heavily referenced:** 21 downstream tables/views depend on `episodes.id`, including `segments`, `transcribe`, `ai_sections`, `gpt5_debug_logs`, etc.
+**Heavy downstream usage** — 21 tables/views reference `episode_id`, plus 7 related RPC functions (`get_pipeline_episodes_v2`, `browse_episodes`, etc.).

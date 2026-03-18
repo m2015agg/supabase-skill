@@ -1,1 +1,1 @@
-Please approve the `mcp__supabase__execute_sql` tool use so I can query the `bibleai.episodes` table schema.
+Please approve the `mcp__supabase__execute_sql` tool call to proceed. Once approved, I'll query the `bibleai.episodes` table schema directly from Postgres.

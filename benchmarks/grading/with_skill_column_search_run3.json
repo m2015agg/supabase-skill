@@ -5,5 +5,5 @@
   ],
   "assertions_missed": [],
   "quality_score": 5,
-  "notes": "Response thoroughly covers jsonb columns with counts, table breakdowns, nullability distinctions, and key highlights. Clearly contains 'jsonb' throughout."
+  "notes": "Response comprehensively covers JSONB columns across the database, organized by category with table names, column names, and NOT NULL constraints noted. The word 'jsonb' appears in the heading and is clearly the subject of the entire response."
 }

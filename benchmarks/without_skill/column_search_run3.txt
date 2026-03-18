@@ -1,1 +1,1 @@
-Waiting for your permission to run the SQL query. Please approve the `mcp__supabase__execute_sql` tool call — it's a read-only `SELECT` against `information_schema.columns` to find all `jsonb` columns in the `bibleai` schema.
+Waiting on your permission to run `mcp__supabase__execute_sql`. Please approve the tool call, and I'll return the results.
