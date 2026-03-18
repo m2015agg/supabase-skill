@@ -47,9 +47,9 @@ export function initCommand(): Command {
       // Write walkthrough skill
       const skillsDir = join(dotClaudeDir, "skills");
       if (!existsSync(skillsDir)) mkdirSync(skillsDir, { recursive: true });
-      const walkthroughPath = join(skillsDir, "supabase-walkthrough.md");
+      const walkthroughPath = join(skillsDir, "supabase.md");
       writeFileSync(walkthroughPath, walkthroughTemplate);
-      write(`    .claude/skills/supabase-walkthrough.md: written\n`);
+      write(`    .claude/skills/supabase.md: written\n`);
 
       // ─── 2. .env (secrets) ───
       write("\n  2/5 Writing .env with API keys...\n");
