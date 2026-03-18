@@ -1,0 +1,18 @@
+Found **45 jsonb columns** across **26 tables**. Here's a summary by area:
+
+| Area | Tables with jsonb |
+|------|-----------------|
+| **Chat** | `chat_messages` (4 cols), `chat_sessions` (2 cols) |
+| **Plans** | `plan_blocks`, `plan_block_recipes`, `plan_block_types`, `plan_days`, `plan_prompt_recipes`, `plan_rag_recipes`, `plans` |
+| **Transcription** | `transcribe` (diarized_json, transcript_json), `episode_chunks` (char_time_map, word_segments) |
+| **Logging/Debug** | `gpt5_debug_logs` (3 cols), `lizi_run_logs` (5 cols), `latency_metrics`, refresh/transcribe job runs |
+| **Entitlements** | `effective_entitlements`, `role_entitlements`, `user_entitlements` |
+| **AI Content** | `ai_application_analysis`, `ai_illustrations`, `biblical_stories` |
+
+Notable **NOT NULL** jsonb columns (must always have a value):
+- `plan_blocks.content`
+- `plan_block_types.output_schema`
+- `plan_block_recipes.recipe_definition`
+- `plans.source_details`
+- `role_entitlements.value` / `user_entitlements.value`
+- `transcript_preprocessed.position_map`

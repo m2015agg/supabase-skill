@@ -1,0 +1,18 @@
+Here are all 45 `jsonb` columns across 26 tables:
+
+**High-density tables:**
+- `chat_messages` — 4 jsonb cols: `context_sources`, `debug_log`, `processing_metadata`, `routing_metadata`
+- `lizi_run_logs` — 5 jsonb cols: `config`, `error_details`, `queue_stats`, `results_summary`, `structured_log`
+- `gpt5_debug_logs` — 3 jsonb cols: `json_schema`, `parsed_response`, `raw_response`
+- `plan_block_types` — 2 jsonb cols: `age_overrides`, `output_schema` (NOT NULL)
+- `plan_block_recipes` — 2 jsonb cols: `age_overrides`, `recipe_definition` (NOT NULL)
+- `transcribe` — 2 jsonb cols: `diarized_json`, `transcript_json`
+
+**Notable NOT NULL jsonb columns:**
+- `plan_block_recipes.recipe_definition`
+- `plan_block_types.output_schema`
+- `plan_blocks.content`
+- `plans.source_details`
+- `role_entitlements.value`
+- `transcript_preprocessed.position_map`
+- `user_entitlements.value`

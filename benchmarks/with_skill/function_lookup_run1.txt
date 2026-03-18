@@ -1,0 +1,71 @@
+Here are all 48 RPC functions grouped by category:
+
+---
+
+## No-Parameter Functions
+| Function | Purpose |
+|----------|---------|
+| `get_episode_statuses` | Get all episode processing statuses |
+| `refresh_unified_embeddings` | Refresh embedding materialized views |
+| `hard_delete_expired_plans` | Clean up expired plans |
+
+## Single-Parameter Functions
+| Function | Parameters |
+|----------|-----------|
+| `bench_search` | `p_func: text` |
+| `delete_subscription` | `subscription_uuid: uuid` |
+| `bench_search_filtered` | `p_func: text` |
+| `increment_cache_hit` | `p_cache_id: uuid` |
+| `match_story_by_name` | `p_name: text` |
+| `get_plan_catalog` | `p_user_id: uuid` |
+| `get_episodes_with_metadata` | `limit_count: integer` |
+| `match_theme_by_hash` | `p_hash: text` |
+| `app_set_home_church` | `p_subscription_id: uuid` |
+| `app_get_episode_ai_payload` | `p_metadata_id: uuid` |
+
+## Multi-Parameter Functions
+| Function | Parameters |
+|----------|-----------|
+| `get_latency_stats` | `p_hours: integer, p_stage: text` |
+| `merge_session_metadata` | `p_session_id: uuid, p_updates: jsonb` |
+| `merge_plan_metadata` | `p_plan_id: uuid, p_updates: jsonb` |
+| `merge_session_context` | `p_session_id: uuid, p_updates: jsonb` |
+| `get_plans_for_time_slot` | `slot_start: text, slot_end: text` |
+| `check_and_increment_usage` | `p_user_id: uuid, p_tier: integer` |
+| `get_digest_users_for_time_slot` | `slot_start: text, slot_end: text` |
+| `fn_get_section_payload` | `p_episode_id: uuid, p_section_index: integer` |
+| `browse_episodes` | `p_subscription_id: uuid, p_limit: integer, p_offset: integer` |
+| `get_pipeline_episodes_v2` | `p_limit: integer, p_offset: integer, p_status_filter: text` |
+| `get_prompt_recipe` | `p_block_type: text, p_content_source: text, p_plan_type: text` |
+| `get_chat_prompt_recipe` | `p_query_type: text, p_tier: text, p_user_type: text` |
+| `update_shep_prompt_file` | `p_file_key: text, p_content: text, p_updated_by: text` |
+| `get_routing_stats` | `p_start_date: timestamptz, p_end_date: timestamptz` |
+| `get_latency_timeseries` | `p_hours: integer, p_stage: text, p_bucket_minutes: integer` |
+
+## Search/Vector Functions
+| Function | Key Parameters |
+|----------|---------------|
+| `search_candidates_fast` | `p_query_embedding: vector, p_subscription_ids: uuid[], p_match_count: int, p_match_threshold: float, p_content_types: text[], p_episode_ids: uuid[], p_anchor_categories: text[], p_book_names: text[], p_speaker_name: text` |
+| `search_unified_fast` | same as above |
+| `search_unified_hybrid` | adds `p_query_text: text` |
+| `search_hybrid` | adds `p_query_text: text, p_query_intent: text, p_rrf_k: integer` |
+| `search_candidates_simple` | no book/speaker/episode filters |
+| `search_with_anchors` | no book/speaker/episode filters |
+| `search_sermon_content` | `query_embedding, content_types[], filter_episode_ids[], match_count, match_threshold` |
+| `search_scripture_by_topic` | `p_query_embedding, p_subscription_ids[], p_match_count, p_match_threshold` |
+| `search_biblical_stories` | adds `p_book: text, p_category: text` |
+| `search_bm25_candidates` | `p_query_text: text` (BM25, no embedding) |
+| `search_response_cache` | `p_query_embedding, p_limit, p_similarity_threshold` |
+| `episode_bm25_search` | `p_episode_id, p_query: text, p_limit` |
+| `episode_semantic_search` | `p_episode_id, p_embedding: vector, p_limit` |
+| `find_sermons_by_story_name` | `p_story_name: text, p_limit, p_min_score` |
+| `find_sermons_for_story` | `p_story_id: uuid, p_limit, p_min_score, p_confidence_threshold, p_vector_threshold, p_xref_min_votes` |
+| `count_topic_matches` | `query_embedding, subscription_ids[], similarity_threshold, limit_count` |
+| `count_topic_matches_fast` | `topic: text, subscription_ids[], limit_count` (text, no embedding) |
+| `count_topic_matches_intersection` | `topics: text[], subscription_ids[], limit_count` |
+
+## User/Auth Functions
+| Function | Parameters |
+|----------|-----------|
+| `record_message_feedback` | `p_session_id: uuid, p_message_id: uuid, p_feedback_type: varchar, p_feedback_reason: text` |
+| `upsert_role_subscription` | `p_user_id, p_role_key, p_provider, p_provider_subscription_id, p_status, p_current_period_end` |

@@ -1,0 +1,9 @@
+```json
+{
+  "pass": false,
+  "assertions_met": [],
+  "assertions_missed": ["chat_messages", "chat_sessions", "users", "foreign key", "user_id"],
+  "quality_score": 1,
+  "notes": "The response contains no substantive content — it is a permission prompt waiting for tool approval. None of the required assertions (table names, foreign key, user_id) are present in the response."
+}
+```

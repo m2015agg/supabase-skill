@@ -1,0 +1,9 @@
+```json
+{
+  "pass": false,
+  "assertions_met": ["plan_days", "plan_blocks"],
+  "assertions_missed": ["plan_day_feedback"],
+  "quality_score": 3,
+  "notes": "Response correctly identifies plan_days and plan_blocks relationships but misses plan_day_feedback, which should also have a foreign key pointing to plans (likely via plan_days). The response is otherwise accurate and well-structured."
+}
+```

@@ -1,0 +1,9 @@
+```json
+{
+  "pass": true,
+  "assertions_met": ["ALTER TABLE", "bibleai", "plan_blocks", "priority", "integer", "DEFAULT 0"],
+  "assertions_missed": [],
+  "quality_score": 5,
+  "notes": "All required assertions are present. The SQL is correct and complete, adding a priority integer column with DEFAULT 0 to bibleai.plan_blocks. The response also includes the deployment command for staging."
+}
+```

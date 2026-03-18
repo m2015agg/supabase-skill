@@ -1,0 +1,25 @@
+Here's the FK chain:
+
+```
+auth.users (Supabase Auth)
+    ↑ (logical link, no FK constraint)
+    │  user_id (uuid)
+    │
+bibleai.chat_sessions
+    id (PK)  ←─── session_id (FK, NOT NULL)
+    user_id               │
+                          │
+                 bibleai.chat_messages
+                     id (PK)
+                     session_id → chat_sessions.id  ✓ enforced FK
+                     role, content, ...
+```
+
+**Key observations:**
+
+- `chat_messages.session_id → chat_sessions.id` — hard FK constraint, enforced by the DB
+- `chat_sessions.user_id` — **no FK constraint** to `auth.users`; it's a logical reference only (0 FKs shown on `chat_sessions`)
+- `chat_messages.resolved_by` is also a `uuid` user reference with no FK constraint
+
+**The chain in plain terms:**
+> A user (auth.users) owns many **sessions** (`chat_sessions.user_id`). Each session contains many **messages** (`chat_messages.session_id`). The only enforced FK is messages → sessions.

@@ -1,0 +1,27 @@
+Here's the `episodes` table summary:
+
+## episodes — 15 columns, ~397 rows
+
+| Column | Type | Nullable | Default |
+|--------|------|----------|---------|
+| `id` **PK** | uuid | NOT NULL | `gen_random_uuid()` |
+| `subscription_id` **FK** | uuid | NOT NULL | — |
+| `provider_episode_id` | text | NOT NULL | — |
+| `discovered_at` | timestamptz | nullable | `now()` |
+| `downloaded_at` | timestamptz | nullable | — |
+| `status` | text | nullable | `new` |
+| `audio_url` | text | nullable | — |
+| `file_path` | text | nullable | — |
+| `duration_seconds` | integer | nullable | — |
+| `duration_minutes` | integer | nullable | — |
+| `created_at` | timestamptz | nullable | `now()` |
+| `updated_at` | timestamptz | nullable | `now()` |
+| `processing_metadata` | jsonb | nullable | — |
+| `metadata_id` **FK** | uuid | nullable | — |
+| `error_message` | text | nullable | — |
+
+**Foreign keys:**
+- `subscription_id` → `subscriptions.id`
+- `metadata_id` → `episode_metadata.id` (nullable)
+
+**Notable:** `status` defaults to `'new'`. The `processing_metadata` jsonb field stores AI analysis results. 22 downstream tables/views reference this table via `episode_id`.

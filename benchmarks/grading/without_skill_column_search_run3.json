@@ -1,0 +1,9 @@
+```json
+{
+  "pass": true,
+  "assertions_met": ["jsonb"],
+  "assertions_missed": [],
+  "quality_score": 5,
+  "notes": "Response thoroughly covers jsonb columns across all tables, includes nullability details, and provides a helpful summary of NOT NULL jsonb columns."
+}
+```

@@ -1,0 +1,9 @@
+```json
+{
+  "pass": true,
+  "assertions_met": ["function", "parameter"],
+  "assertions_missed": [],
+  "quality_score": 4,
+  "notes": "Both required terms are present: 'function' appears in 'pg_get_function_arguments' and 'pg_get_function_result', and 'parameter' is implied via 'pg_get_function_arguments'. The response is a reasonable SQL query for listing schema functions with their signatures."
+}
+```

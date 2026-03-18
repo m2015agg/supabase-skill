@@ -1,0 +1,9 @@
+```json
+{
+  "pass": false,
+  "assertions_met": [],
+  "assertions_missed": ["plan_days", "plan_blocks", "plan_day_feedback"],
+  "quality_score": 1,
+  "notes": "The response contains no actual answer — it only describes what it intends to do (run a SQL query) and asks for approval. None of the required table names (plan_days, plan_blocks, plan_day_feedback) appear in the response."
+}
+```

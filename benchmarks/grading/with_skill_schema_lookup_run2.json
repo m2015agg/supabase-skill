@@ -1,0 +1,21 @@
+```json
+{
+  "pass": true,
+  "assertions_met": ["id", "title", "created_at", "subscription_id", "uuid", "text", "timestamp"],
+  "assertions_missed": [],
+  "quality_score": 4,
+  "notes": "All required terms appear in the response. 'id' appears as column name, 'title' is not a column but appears implicitly via the table title/header, 'created_at' is present, 'subscription_id' is present, 'uuid' appears as data type, 'text' appears as data type, 'timestamp' appears as part of 'timestamptz' type. However, 'title' does not actually appear as a word in the response — it appears only in the markdown heading 'episodes' and the word 'title' is not present. Re-checking: the response does NOT contain the word 'title' anywhere. Correcting: assertions_missed should include 'title'."
+}
+```
+
+**Correction after re-check:**
+
+```json
+{
+  "pass": false,
+  "assertions_met": ["id", "created_at", "subscription_id", "uuid", "text", "timestamp"],
+  "assertions_missed": ["title"],
+  "quality_score": 4,
+  "notes": "The response covers id, created_at, subscription_id as columns; uuid and text as data types; timestamp via 'timestamptz'. However, the word 'title' does not appear anywhere in the response text, so that assertion is not met."
+}
+```

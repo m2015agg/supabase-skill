@@ -1,0 +1,9 @@
+```json
+{
+  "pass": true,
+  "assertions_met": ["function", "parameter"],
+  "assertions_missed": [],
+  "quality_score": 5,
+  "notes": "Response contains both required terms extensively. Lists 48 RPC functions with their parameters in well-organized tables."
+}
+```

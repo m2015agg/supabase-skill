@@ -1,0 +1,1 @@
+Please approve the `mcp__supabase__execute_sql` tool call to query the foreign key relationships. Once approved, I'll show the full FK chain between `chat_sessions`, `chat_messages`, and `users`.

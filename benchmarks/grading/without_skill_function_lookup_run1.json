@@ -1,0 +1,9 @@
+```json
+{
+  "pass": false,
+  "assertions_met": [],
+  "assertions_missed": ["function", "parameter"],
+  "quality_score": 1,
+  "notes": "The response is a permission request, not an answer. It contains neither 'function' nor 'parameter' as required assertions. The response fails to address the task at all."
+}
+```

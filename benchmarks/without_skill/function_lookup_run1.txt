@@ -1,0 +1,1 @@
+Please grant permission to use the Supabase MCP tool (`mcp__supabase__execute_sql`) so I can query the database for the RPC functions.

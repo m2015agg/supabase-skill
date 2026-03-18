@@ -1,0 +1,28 @@
+Here's a summary of the `episodes` table:
+
+## episodes — 15 columns, ~397 rows
+
+| Column | Type | Nullable | Notes |
+|--------|------|----------|-------|
+| `id` | uuid | NOT NULL | PK, default `gen_random_uuid()` |
+| `subscription_id` | uuid | NOT NULL | FK → subscriptions.id |
+| `provider_episode_id` | text | NOT NULL | External provider ID |
+| `discovered_at` | timestamptz | nullable | default `now()` |
+| `downloaded_at` | timestamptz | nullable | |
+| `status` | text | nullable | default `new` |
+| `audio_url` | text | nullable | |
+| `file_path` | text | nullable | |
+| `duration_seconds` | integer | nullable | |
+| `duration_minutes` | integer | nullable | |
+| `created_at` | timestamptz | nullable | default `now()` |
+| `updated_at` | timestamptz | nullable | default `now()` |
+| `processing_metadata` | jsonb | nullable | AI analysis results |
+| `metadata_id` | uuid | nullable | FK → episode_metadata.id |
+| `error_message` | text | nullable | |
+
+**Key points:**
+- Only `id`, `subscription_id`, and `provider_episode_id` are NOT NULL
+- `status` defaults to `new` — this drives the processing pipeline
+- `processing_metadata` (jsonb) holds additional AI processing data
+- Referenced by 21 downstream tables/views (segments, transcripts, AI analysis, etc.)
+- Related RPCs: `browse_episodes`, `get_pipeline_episodes_v2`, `app_get_episode_ai_payload`

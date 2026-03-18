@@ -1,0 +1,1 @@
+Waiting for your permission to run the SQL query. Please approve the `mcp__supabase__execute_sql` tool call, then I'll show you the FK chain.

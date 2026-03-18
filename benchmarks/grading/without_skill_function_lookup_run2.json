@@ -1,0 +1,9 @@
+```json
+{
+  "pass": true,
+  "assertions_met": ["function", "parameter"],
+  "assertions_missed": [],
+  "quality_score": 4,
+  "notes": "Both required terms are present: 'function' appears multiple times (function_name, pg_get_function_arguments, etc.) and 'parameter' appears in 'parameters' column alias and 'pg_get_function_arguments'. The response provides helpful alternatives for a permission issue."
+}
+```

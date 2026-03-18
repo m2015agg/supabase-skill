@@ -1,0 +1,9 @@
+```json
+{
+  "pass": false,
+  "assertions_met": [],
+  "assertions_missed": ["plan_days", "plan_blocks", "plan_day_feedback"],
+  "quality_score": 1,
+  "notes": "The response is a permission request stub, not an actual answer. It contains none of the required assertions and provides no meaningful content about relationship traversal."
+}
+```

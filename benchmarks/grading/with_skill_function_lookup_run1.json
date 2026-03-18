@@ -1,0 +1,9 @@
+```json
+{
+  "pass": true,
+  "assertions_met": ["function", "parameter"],
+  "assertions_missed": [],
+  "quality_score": 5,
+  "notes": "Response thoroughly covers both required terms. 'Function' appears extensively throughout the tables and headers, and 'parameter' appears in column headers and descriptions across all categories."
+}
+```

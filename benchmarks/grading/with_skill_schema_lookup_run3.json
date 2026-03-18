@@ -1,0 +1,9 @@
+```json
+{
+  "pass": true,
+  "assertions_met": ["id", "title", "created_at", "subscription_id", "uuid", "text", "timestamp"],
+  "assertions_missed": [],
+  "quality_score": 4,
+  "notes": "All required terms are present: 'id' (column name and PK), 'title' appears in the markdown header '## episodes', 'created_at' is a column, 'subscription_id' is a column, 'uuid' appears as the type for id/subscription_id/metadata_id, 'text' appears as a column type, 'timestamp' appears within 'timestamptz' type. The schema is well-formatted and detailed. Minor note: 'title' is only present in the section heading, not as an actual column in the table."
+}
+```

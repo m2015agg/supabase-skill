@@ -1,0 +1,11 @@
+Waiting for permission... Once approved, the file will be created. Here's what it contains:
+
+```sql
+ALTER TABLE bibleai.plan_blocks
+    ADD COLUMN priority integer NOT NULL DEFAULT 0;
+```
+
+To apply it to staging after the file is created:
+```bash
+supabase migration up --project-ref jugnzbfalgeyaqrhlvgr
+```

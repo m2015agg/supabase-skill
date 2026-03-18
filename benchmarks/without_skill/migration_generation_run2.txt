@@ -1,0 +1,31 @@
+The file write is being blocked by permissions. Here's what I found and what the migration should be:
+
+**`plan_blocks` current columns:**
+
+| Column | Type | Default |
+|--------|------|---------|
+| id | uuid | gen_random_uuid() |
+| plan_day_id | uuid | — |
+| block_type_id | uuid | — |
+| block_order | integer | — |
+| target_duration_seconds | integer | — |
+| content | jsonb | — |
+| completed_at | timestamptz | null |
+| created_at | timestamptz | now() |
+| updated_at | timestamptz | now() |
+| status | text | 'locked' |
+
+**Migration SQL** (`supabase/migrations/20260318000000_add_priority_to_plan_blocks.sql`):
+
+```sql
+-- Add priority column to plan_blocks for ordering blocks within a plan day
+ALTER TABLE bibleai.plan_blocks
+    ADD COLUMN priority integer NOT NULL DEFAULT 0;
+```
+
+To apply it, you'd need to allow the file write and then run:
+```bash
+supabase migration up --project-ref jugnzbfalgeyaqrhlvgr  # stage
+```
+
+Would you like to grant permission to create the file, or paste the SQL above into the migration manually?

@@ -1,0 +1,9 @@
+```json
+{
+  "pass": false,
+  "assertions_met": ["plan_days"],
+  "assertions_missed": ["plan_blocks", "plan_day_feedback"],
+  "quality_score": 2,
+  "notes": "Response only identifies plan_days as referencing plans, but misses plan_blocks and plan_day_feedback which are also required. The response is confidently incomplete, claiming plan_days is 'the sole relationship' when it is not."
+}
+```

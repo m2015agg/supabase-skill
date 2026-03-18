@@ -1,0 +1,27 @@
+Here's the table structure and the migration SQL. You can create the file yourself:
+
+**`plan_blocks` current columns** (10 total):
+- `id` uuid PK
+- `plan_day_id` uuid FK → plan_days
+- `block_type_id` uuid FK → plan_block_types
+- `block_order` integer
+- `target_duration_seconds` integer
+- `content` jsonb
+- `completed_at` timestamptz nullable
+- `created_at` / `updated_at` timestamptz
+- `status` text (default: `locked`)
+
+**Migration to create** at `supabase/migrations/20260318000000_add_priority_to_plan_blocks.sql`:
+
+```sql
+-- Add priority column to plan_blocks for ordering blocks within a day
+ALTER TABLE bibleai.plan_blocks
+    ADD COLUMN priority integer NOT NULL DEFAULT 0;
+```
+
+Then apply to staging:
+```bash
+supabase migration up --project-ref jugnzbfalgeyaqrhlvgr
+```
+
+Note: I also see there's already a `block_order` column — if `priority` is meant to serve the same purpose, you may want to consider whether both are needed or if one should replace the other.

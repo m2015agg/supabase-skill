@@ -1,0 +1,9 @@
+```json
+{
+  "pass": true,
+  "assertions_met": ["ALTER TABLE", "bibleai", "plan_blocks", "priority", "integer", "DEFAULT 0"],
+  "assertions_missed": [],
+  "quality_score": 5,
+  "notes": "All required assertions are present. The migration SQL is correct, complete, and well-structured with proper schema prefix, column type, and default value."
+}
+```

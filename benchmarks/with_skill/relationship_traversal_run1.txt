@@ -1,0 +1,8 @@
+Tables with foreign keys pointing to `plans`:
+
+| Table | Column | FK |
+|-------|--------|----|
+| `plan_days` | `plan_id` | → `plans.id` |
+| `plan_blocks` | `plan_day_id` | → `plans.id` |
+
+Note: `plan_blocks` actually references `plan_days.plan_day_id → id`, not directly `plans.id` — it links through `plan_days`. Only **`plan_days`** has a direct FK to `plans.id`.

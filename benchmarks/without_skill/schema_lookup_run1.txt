@@ -1,0 +1,26 @@
+Here are the columns in `bibleai.episodes` (from the local schema snapshot):
+
+| Column | Type | Nullable | Default | FK |
+|--------|------|----------|---------|-----|
+| `id` **PK** | uuid | NOT NULL | `gen_random_uuid()` | |
+| `subscription_id` | uuid | NOT NULL | | → `subscriptions.id` |
+| `provider_episode_id` | text | NOT NULL | | |
+| `discovered_at` | timestamptz | nullable | `now()` | |
+| `downloaded_at` | timestamptz | nullable | | |
+| `status` | text | nullable | `'new'` | |
+| `audio_url` | text | nullable | | |
+| `file_path` | text | nullable | | |
+| `duration_seconds` | integer | nullable | | |
+| `created_at` | timestamptz | nullable | `now()` | |
+| `updated_at` | timestamptz | nullable | `now()` | |
+| `processing_metadata` | jsonb | nullable | | |
+| `duration_minutes` | integer | nullable | | |
+| `metadata_id` | uuid | nullable | | → `episode_metadata.id` |
+| `error_message` | text | nullable | | |
+
+**Summary:** 15 columns, 1 PK, 2 FKs, ~397 rows.
+
+Notable constraints:
+- `id`, `subscription_id`, `provider_episode_id` are NOT NULL
+- Only `id` and `subscription_id` are required on insert (plus `provider_episode_id`)
+- `metadata_id` is nullable — cleared during subscription cascade delete before the episode itself is deleted

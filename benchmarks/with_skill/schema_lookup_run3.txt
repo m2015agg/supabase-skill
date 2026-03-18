@@ -1,0 +1,28 @@
+Here's the `episodes` table schema:
+
+## episodes (~397 rows)
+
+| Column | Type | Nullable | Default | FK |
+|--------|------|----------|---------|-----|
+| `id` **PK** | uuid | NOT NULL | `gen_random_uuid()` | |
+| `subscription_id` | uuid | NOT NULL | | → subscriptions |
+| `provider_episode_id` | text | NOT NULL | | |
+| `discovered_at` | timestamptz | nullable | `now()` | |
+| `downloaded_at` | timestamptz | nullable | | |
+| `status` | text | nullable | `'new'` | |
+| `audio_url` | text | nullable | | |
+| `file_path` | text | nullable | | |
+| `duration_seconds` | integer | nullable | | |
+| `created_at` | timestamptz | nullable | `now()` | |
+| `updated_at` | timestamptz | nullable | `now()` | |
+| `processing_metadata` | jsonb | nullable | | |
+| `duration_minutes` | integer | nullable | | |
+| `metadata_id` | uuid | nullable | | → episode_metadata |
+| `error_message` | text | nullable | | |
+
+**Key points:**
+- Only `id`, `subscription_id`, and `provider_episode_id` are `NOT NULL`
+- `status` defaults to `'new'`
+- `metadata_id` is nullable (cleared during subscription cascade delete)
+- Referenced by 21 tables/views (segments, transcriptions, AI analysis tables, etc.)
+- Related RPCs: `browse_episodes`, `get_pipeline_episodes_v2`, `app_get_episode_ai_payload`, `episode_bm25_search`, `episode_semantic_search`

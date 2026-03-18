@@ -1,0 +1,11 @@
+Permission denied for the MCP tool. Please grant access to `mcp__supabase__execute_sql` and I'll retry, or I can use the Supabase CLI instead:
+
+```bash
+supabase db execute --project-ref jugnzbfalgeyaqrhlvgr --stdin <<< "
+SELECT table_name, column_name, data_type
+FROM information_schema.columns
+WHERE table_schema = 'bibleai' AND data_type = 'jsonb'
+ORDER BY table_name, column_name;"
+```
+
+Which would you prefer?

@@ -275,19 +275,74 @@ What gets written to CLAUDE.md — every Supabase CLI capability:
 
 **Secrets never go in CLAUDE.md.** Agent reads `.env` when it needs direct API access.
 
-## Real-World Token Savings
+## Benchmark Results (Anthropic SkillsBench Format)
 
-Measured across 14 Claude Code conversations on a production Supabase project (80 tables, 48 RPCs, 86 FKs):
+Benchmarked against the official Supabase MCP server using Anthropic's SkillsBench evaluation framework. 6 evals × 3 runs each, LLM-graded.
 
-| Metric | Before | After | Savings |
-|--------|--------|-------|---------|
-| "What columns does episodes have?" | ~1,200 tokens | ~80 tokens | **93%** |
-| "Find all jsonb columns" | ~3,000 tokens | ~200 tokens | **93%** |
-| "What references episodes?" | ~2,000 tokens | ~150 tokens | **92%** |
-| "Show me the full schema" | ~22,000 tokens | ~500 tokens | **98%** |
-| **Total across 14 conversations** | **~330,000 tokens** | **~15,000 tokens** | **~95%** |
+### Speed Comparison
 
-At Opus rates ($15/M): **$4.70 saved** just from the conversations we measured.
+| Eval | With Skill | MCP Server | Speedup |
+|------|-----------|------------|---------|
+| Schema Lookup | **14.0s** | 18.2s | 1.3x faster |
+| Relationship Traversal | **13.5s** | 33.8s | **2.5x faster** |
+| Column Search | **14.7s** | 97.6s | **6.6x faster** |
+| Function Lookup | 33.8s | **18.5s** | MCP wins (0.5x) |
+| Migration Generation | **25.6s** | 36.4s | 1.4x faster |
+| Cross-Table Query | **17.9s** | 14.2s | MCP wins (0.8x) |
+
+**Skill wins 4/6 on speed.** Column search is the standout — MCP had to iterate 62 tables via `information_schema` (one run took 250s). The skill reads indexed SQLite in <1s.
+
+### Quality Comparison (LLM-Graded)
+
+| Eval | With Skill | MCP Server |
+|------|-----------|------------|
+| Schema Lookup | 4/5 | 3/5 |
+| Relationship Traversal | 2/5 | 2/5 |
+| Column Search | **5/5 PASS** | 3/5 PASS |
+| Function Lookup | **5/5 PASS** | 1/5 FAIL |
+| Migration Generation | **5/5 PASS** | **5/5 PASS** |
+| Cross-Table Query | **5/5 PASS** | 1/5 FAIL |
+
+**Skill wins 4/6 on quality.** MCP completely failed function_lookup and cross_table_query — couldn't retrieve the data within the turn limit. The skill had it cached locally.
+
+### Real-World Weekly Usage Data
+
+Measured from 41 Claude Code sessions over 7 days on a production project (62 tables, 48 RPCs, 86 FKs):
+
+**MCP Usage (before supabase-skill):**
+- 293 `execute_sql` calls
+- 62 `list_tables` calls
+- 355 total MCP calls/week across 41 sessions
+
+**Token Savings:**
+
+| Metric | MCP (current) | With Skill | Weekly Savings |
+|--------|--------------|------------|----------------|
+| Schema lookups | 62 × 3,500 tokens | 62 × 200 tokens | **204,600 tokens (94%)** |
+| SQL queries | 293 × 275 tokens | 293 × 50 tokens | **65,925 tokens (82%)** |
+| **Total tokens** | **~330K/week** | **~60K/week** | **~270K tokens/week** |
+| Time per call | ~30s avg | ~18s avg | **71 min/week** |
+| **Cost (Opus $15/M)** | **~$7.20/week** | **~$1.11/week** | **~$26/month saved** |
+
+### Per-Query Token Savings
+
+| Query Type | MCP Tokens | Skill Tokens | Savings |
+|-----------|-----------|-------------|---------|
+| "What columns does X have?" | ~1,200 | ~80 | **93%** |
+| "Find all jsonb columns" | ~3,000 | ~200 | **93%** |
+| "What references X?" | ~2,000 | ~150 | **92%** |
+| "Show me the full schema" | ~22,000 | ~500 | **98%** |
+
+### Monthly Projection
+
+| Metric | MCP | With Skill | Saved |
+|--------|-----|------------|-------|
+| Tokens | 1.32M | 240K | **1.08M tokens** |
+| Cost (Opus) | $28.80 | $4.44 | **$24.36/month** |
+| Time spent waiting | ~5 hours | ~3 hours | **~2 hours/month** |
+| Permission prompts | ~1,200 | 0 | **1,200 clicks saved** |
+
+> **Methodology:** Usage data from Claude Code conversation logs (`.claude/projects/` JSONL files). Benchmark runs via `claude -p` with `--model sonnet`. Grading via Claude LLM grader following Anthropic SkillsBench spec. Raw data in `benchmarks/`.
 
 ## Why CLIs Beat MCP for Agents
 

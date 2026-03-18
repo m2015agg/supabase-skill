@@ -1,0 +1,9 @@
+```json
+{
+  "pass": true,
+  "assertions_met": ["ALTER TABLE", "bibleai", "plan_blocks", "priority", "integer", "DEFAULT 0"],
+  "assertions_missed": [],
+  "quality_score": 5,
+  "notes": "All required assertions are present. The response includes a complete, correct migration SQL statement with ALTER TABLE bibleai.plan_blocks, adds the priority column as integer with DEFAULT 0, and provides clear instructions for creating and applying the migration."
+}
+```

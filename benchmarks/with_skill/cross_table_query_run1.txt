@@ -1,0 +1,23 @@
+Here's the FK chain:
+
+```
+auth.users (Supabase auth)
+    ↑ (no formal FK — user_id is uuid but not constrained to auth.users)
+    │
+bibleai.chat_sessions
+    id (PK), user_id (uuid, NOT NULL — logical link to auth.users)
+    │
+    ↓ chat_sessions.id ← session_id
+bibleai.chat_messages
+    id (PK), session_id → chat_sessions.id
+```
+
+**Key observations:**
+
+1. **`chat_messages` → `chat_sessions`**: Hard FK via `chat_messages.session_id → chat_sessions.id`
+2. **`chat_sessions` → users**: `user_id` is a `uuid NOT NULL` but there's **no declared FK** to `auth.users` — it's a logical relationship only (common pattern in Supabase to avoid cross-schema FK constraints)
+3. **`chat_messages.resolved_by`**: Also a `uuid` pointing to a user, but again no FK constraint
+
+**Scale context:**
+- `chat_sessions`: ~16,472 rows / 8.8 MB
+- `chat_messages`: ~37,562 rows / **373 MB** (large due to text content + jsonb blobs)

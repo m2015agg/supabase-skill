@@ -1,0 +1,1 @@
+Permission needed — please approve the `mcp__supabase__execute_sql` tool call above to query the database.
