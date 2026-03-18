@@ -59,7 +59,12 @@ export function updateCommand(): Command {
           timeout: 60000,
           stdio: "inherit",
         });
-        write(`\n  ✓ Updated to v${latest}\n\n`);
+        write(`\n  ✓ Updated to v${latest}\n`);
+        write("\n  Run `supabase-skill init` in your project directories to update:\n");
+        write("    - CLAUDE.md skill doc\n");
+        write("    - /supabase walkthrough skill\n");
+        write("    - Claude Code permissions\n");
+        write("    - Schema snapshot\n\n");
       } catch {
         write("  ✗ Update failed. Try: npm install -g @m2015agg/supabase-skill@latest\n\n");
       }
