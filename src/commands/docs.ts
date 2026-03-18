@@ -203,8 +203,8 @@ All schema changes go through migration files. Create with \`supabase migration 
 If \`.supabase-schema/\` exists, ALWAYS use these commands instead of running SQL to explore the schema:
 - \`supabase-skill snapshot\` — snapshot schema to .supabase-schema/ (tables, columns, FKs, functions)
 - \`supabase-skill snapshot --project-ref <ref>\` — snapshot a specific environment
-- \`supabase-skill context <table-or-topic>\` — get full context: columns, FKs, related tables (2 levels deep), related functions
-- \`supabase-skill context <topic> --depth 3\` — deeper FK traversal
+- \`supabase-skill context <table-or-topic>\` — get full context: columns, FKs, related tables (3 levels deep), name-related tables, functions
+- \`supabase-skill context <topic> --depth 5\` — deeper FK traversal
 - \`supabase-skill table <name>\` — full single-table detail with relationships, functions, related table summaries
 - \`supabase-skill columns --type <type>\` — find all columns of a type (uuid, jsonb, text, timestamp, etc.)
 - \`supabase-skill columns --fk\` — find all foreign key columns
@@ -212,6 +212,13 @@ If \`.supabase-schema/\` exists, ALWAYS use these commands instead of running SQ
 - \`supabase-skill columns <name> --type jsonb\` — combine name + type filters
 - \`supabase-skill search <query>\` — search tables, columns, functions, and relationships
 - \`supabase-skill search <query> --json\` — structured JSON output
+- \`supabase-skill functions [query]\` — list/search RPC functions with parameters
+- \`supabase-skill functions --args uuid\` — find functions by argument type
+- \`supabase-skill indexes [table]\` — list indexes, filter by table, \`--unique\`, \`--primary\`
+- \`supabase-skill enums [name]\` — list custom enum types and their values
+- \`supabase-skill policies [table]\` — list RLS policies, filter by \`--command SELECT/INSERT/UPDATE/DELETE\`
+- \`supabase-skill triggers [table]\` — list triggers, filter by \`--event INSERT/UPDATE/DELETE\`
+- \`supabase-skill views [name]\` — list views, \`--full\` for definitions
 - Read \`.supabase-schema/tables/<name>.md\` — full table schema (columns, types, PKs, FKs, defaults)
 - Read \`.supabase-schema/index.md\` — overview of all tables, views, functions
 - Read \`.supabase-schema/relationships.json\` — all foreign key mappings
