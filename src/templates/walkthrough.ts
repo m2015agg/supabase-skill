@@ -1,6 +1,7 @@
 export const walkthroughTemplate = `---
 name: supabase
 description: Interactive walkthrough of Supabase database schema, tables, relationships, and functions via supabase-skill CLI
+user_invocable: true
 ---
 
 # /supabase — Database Walkthrough
