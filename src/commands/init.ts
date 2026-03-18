@@ -44,12 +44,12 @@ export function initCommand(): Command {
       const dotResult = upsertSection(dotClaudeMd, skillDoc);
       write(`    .claude/CLAUDE.md: ${dotResult}\n`);
 
-      // Write walkthrough skill
-      const skillsDir = join(dotClaudeDir, "skills");
-      if (!existsSync(skillsDir)) mkdirSync(skillsDir, { recursive: true });
-      const walkthroughPath = join(skillsDir, "supabase.md");
-      writeFileSync(walkthroughPath, walkthroughTemplate);
-      write(`    .claude/skills/supabase.md: written\n`);
+      // Write /supabase slash command
+      const commandsDir = join(dotClaudeDir, "commands");
+      if (!existsSync(commandsDir)) mkdirSync(commandsDir, { recursive: true });
+      const commandPath = join(commandsDir, "supabase.md");
+      writeFileSync(commandPath, walkthroughTemplate);
+      write(`    .claude/commands/supabase.md: written\n`);
 
       // ─── 2. .env (secrets) ───
       write("\n  2/5 Writing .env with API keys...\n");
