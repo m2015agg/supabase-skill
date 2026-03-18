@@ -222,6 +222,8 @@ If \`.supabase-schema/\` exists, ALWAYS use these commands instead of running SQ
 - **After applying migrations**: Run \`supabase-skill snapshot\` to update the local schema cache
 - **After creating/altering tables**: Run \`supabase-skill snapshot\` before continuing work
 - **Rule of thumb**: If you ran any DDL (CREATE, ALTER, DROP) or migration commands, refresh the snapshot immediately
+- **Freshness check**: If snapshot is >24h old, suggest refreshing before relying on schema data
+- \`supabase-skill doctor\` shows snapshot age and overall setup health
 
 ### Safety Rules
 - NEVER run mutations on PROD without explicit user approval

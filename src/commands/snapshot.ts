@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { mkdirSync, writeFileSync, existsSync, rmSync } from "node:fs";
 import { readConfig } from "../util/config.js";
 import {
-  openDb, initSchema, clearData, insertAll,
+  openDb, initSchema, clearData, insertAll, setMetadata,
   type TableRow, type ColumnRow, type RelRow, type FuncRow,
 } from "../util/db.js";
 
@@ -49,7 +49,7 @@ function write(msg: string): void {
   process.stdout.write(msg);
 }
 
-function fetchOpenAPISpec(projectRef: string, schema: string): OpenAPISpec {
+export function fetchOpenAPISpec(projectRef: string, schema: string): OpenAPISpec {
   // Get API keys
   const keysJson = execSync(
     `supabase projects api-keys --project-ref ${projectRef} -o json 2>&1`,
@@ -83,7 +83,7 @@ function isPrimaryKey(desc: string | undefined): boolean {
   return desc?.includes("<pk/>") ?? false;
 }
 
-function generateTableMarkdown(name: string, def: TableDef): string {
+function generateTableMarkdown(name: string, def: TableDef, stats?: TableStats): string {
   const lines: string[] = [`# ${name}`, ""];
   const required = new Set(def.required || []);
 
@@ -91,7 +91,11 @@ function generateTableMarkdown(name: string, def: TableDef): string {
   const colCount = Object.keys(def.properties).length;
   const pks = Object.entries(def.properties).filter(([, v]) => isPrimaryKey(v.description));
   const fks = Object.entries(def.properties).filter(([, v]) => parseForeignKeys(v.description));
-  lines.push(`${colCount} columns | ${pks.length} PK | ${fks.length} FK`);
+  let summary = `${colCount} columns | ${pks.length} PK | ${fks.length} FK`;
+  if (stats) {
+    summary += ` | ~${stats.rowCount.toLocaleString()} rows | ${stats.totalSize}`;
+  }
+  lines.push(summary);
   lines.push("");
 
   // Columns table
@@ -135,7 +139,9 @@ function generateIndexMarkdown(
   views: string[],
   rpcs: string[],
   defs: Record<string, TableDef>,
+  statsMap?: Map<string, TableStats>,
 ): string {
+  const hasStats = statsMap && statsMap.size > 0;
   const lines: string[] = [
     "# Database Schema Index",
     "",
@@ -145,8 +151,12 @@ function generateIndexMarkdown(
     "",
     "## Tables",
     "",
-    "| Table | Columns | FKs | Description |",
-    "|-------|---------|-----|-------------|",
+    hasStats
+      ? "| Table | Columns | FKs | Rows | Size |"
+      : "| Table | Columns | FKs | Description |",
+    hasStats
+      ? "|-------|---------|-----|------|------|"
+      : "|-------|---------|-----|-------------|",
   ];
 
   for (const name of tables) {
@@ -154,8 +164,14 @@ function generateIndexMarkdown(
     if (!def) continue;
     const colCount = Object.keys(def.properties).length;
     const fkCount = Object.values(def.properties).filter((v) => parseForeignKeys(v.description)).length;
-    // Try to infer purpose from column names
-    lines.push(`| [${name}](tables/${name}.md) | ${colCount} | ${fkCount} | |`);
+    const s = statsMap?.get(name);
+    if (hasStats && s) {
+      lines.push(`| [${name}](tables/${name}.md) | ${colCount} | ${fkCount} | ~${s.rowCount.toLocaleString()} | ${s.totalSize} |`);
+    } else if (hasStats) {
+      lines.push(`| [${name}](tables/${name}.md) | ${colCount} | ${fkCount} | — | — |`);
+    } else {
+      lines.push(`| [${name}](tables/${name}.md) | ${colCount} | ${fkCount} | |`);
+    }
   }
 
   if (views.length > 0) {
@@ -222,6 +238,48 @@ function generateFunctionsMarkdown(paths: Record<string, RpcEndpoint>): string {
   return lines.join("\n");
 }
 
+interface TableStats {
+  name: string;
+  tableSize: string;
+  indexSize: string;
+  totalSize: string;
+  rowCount: number;
+}
+
+function fetchTableStats(): Map<string, TableStats> {
+  const stats = new Map<string, TableStats>();
+  try {
+    const output = execSync("supabase inspect db table-stats 2>&1", {
+      encoding: "utf-8",
+      timeout: 30000,
+    });
+    // Parse ASCII table: | schema.name | Table size | Index size | Total size | Estimated row count | Seq scans |
+    for (const line of output.split("\n")) {
+      if (!line.includes("|")) continue;
+      const cols = line.split("|").map((c) => c.trim()).filter(Boolean);
+      if (cols.length < 5) continue;
+      // Skip header/separator lines
+      if (cols[0] === "Name" || cols[0].startsWith("-") || cols[0] === "schema") continue;
+      if (cols[1]?.startsWith("-")) continue;
+
+      const rawName = cols[0];
+      // Strip schema prefix (e.g. "bibleai.episodes" → "episodes")
+      const name = rawName.includes(".") ? rawName.split(".").pop()! : rawName;
+      const tableSize = cols[1];
+      const indexSize = cols[2];
+      const totalSize = cols[3];
+      const rowCount = parseInt(cols[4]?.replace(/,/g, ""), 10);
+
+      if (name && !isNaN(rowCount)) {
+        stats.set(name, { name, tableSize, indexSize, totalSize, rowCount });
+      }
+    }
+  } catch {
+    // table-stats requires a linked project; silently skip if unavailable
+  }
+  return stats;
+}
+
 export function snapshotCommand(): Command {
   return new Command("snapshot")
     .description("Snapshot database schema to local .supabase-schema/ directory for fast agent lookups")
@@ -269,6 +327,15 @@ export function snapshotCommand(): Command {
         .map((p) => p.replace("/rpc/", ""))
         .sort();
 
+      // Fetch table stats (sizes + row counts)
+      write("  Fetching table stats... ");
+      const tableStats = fetchTableStats();
+      if (tableStats.size > 0) {
+        write(`\u2713 ${tableStats.size} tables\n`);
+      } else {
+        write("skipped (link project for stats)\n");
+      }
+
       // Create output directory
       const outDir = join(process.cwd(), opts.output);
       const tablesDir = join(outDir, "tables");
@@ -282,7 +349,7 @@ export function snapshotCommand(): Command {
       write("  Generating index... ");
       writeFileSync(
         join(outDir, "index.md"),
-        generateIndexMarkdown(tables, views, rpcs, spec.definitions),
+        generateIndexMarkdown(tables, views, rpcs, spec.definitions, tableStats),
       );
       write("\u2713\n");
 
@@ -291,7 +358,7 @@ export function snapshotCommand(): Command {
       for (const name of tables) {
         const def = spec.definitions[name];
         if (def) {
-          writeFileSync(join(tablesDir, `${name}.md`), generateTableMarkdown(name, def));
+          writeFileSync(join(tablesDir, `${name}.md`), generateTableMarkdown(name, def, tableStats.get(name)));
         }
       }
       write("\u2713\n");
@@ -302,7 +369,7 @@ export function snapshotCommand(): Command {
         for (const name of views) {
           const def = spec.definitions[name];
           if (def) {
-            writeFileSync(join(tablesDir, `${name}.md`), generateTableMarkdown(name, def));
+            writeFileSync(join(tablesDir, `${name}.md`), generateTableMarkdown(name, def, tableStats.get(name)));
           }
         }
         write("\u2713\n");
@@ -378,7 +445,12 @@ export function snapshotCommand(): Command {
             }
           }
 
-          dbTables.push({ name, column_count: colCount, pk_count: pkCount, fk_count: fkCount, is_view: isView });
+          const s = tableStats.get(name);
+          dbTables.push({
+            name, column_count: colCount, pk_count: pkCount, fk_count: fkCount, is_view: isView,
+            row_count: s?.rowCount ?? null, table_size: s?.tableSize ?? null,
+            index_size: s?.indexSize ?? null, total_size: s?.totalSize ?? null,
+          });
         }
 
         // Build function data
@@ -399,6 +471,12 @@ export function snapshotCommand(): Command {
         }
 
         insertAll(db, dbTables, dbColumns, dbRels, dbFuncs);
+
+        // Write metadata
+        setMetadata(db, "snapshot_at", new Date().toISOString());
+        setMetadata(db, "schema", schema);
+        setMetadata(db, "project_ref", ref);
+
         db.close();
         write("\u2713\n");
       } catch (e) {

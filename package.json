@@ -1,6 +1,6 @@
 {
   "name": "@m2015agg/supabase-skill",
-  "version": "0.6.2",
+  "version": "0.7.0",
   "description": "Supabase CLI skill for AI agents. Installs comprehensive CLI instructions into CLAUDE.md, AGENTS.md, or .cursorrules with multi-environment support.",
   "type": "module",
   "main": "./dist/index.js",
@@ -13,7 +13,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "link": "npm run build && npm link",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "postinstall": "node -e \"process.stdout.write('\\n  supabase-skill installed! Run: supabase-skill install\\n\\n')\""
   },
   "keywords": [
     "supabase",

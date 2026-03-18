@@ -12,7 +12,16 @@ CREATE TABLE IF NOT EXISTS tables (
   column_count INTEGER,
   pk_count INTEGER,
   fk_count INTEGER,
-  is_view BOOLEAN DEFAULT FALSE
+  is_view BOOLEAN DEFAULT FALSE,
+  row_count INTEGER,
+  table_size TEXT,
+  index_size TEXT,
+  total_size TEXT
+);
+
+CREATE TABLE IF NOT EXISTS metadata (
+  key TEXT PRIMARY KEY,
+  value TEXT
 );
 
 CREATE TABLE IF NOT EXISTS columns (
@@ -83,6 +92,16 @@ export function clearData(db: Database.Database): void {
   db.exec("DELETE FROM relationships");
   db.exec("DELETE FROM functions");
   db.exec("DELETE FROM tables");
+  db.exec("DELETE FROM metadata");
+}
+
+export function setMetadata(db: Database.Database, key: string, value: string): void {
+  db.prepare("INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)").run(key, value);
+}
+
+export function getMetadata(db: Database.Database, key: string): string | undefined {
+  const row = db.prepare("SELECT value FROM metadata WHERE key = ?").get(key) as { value: string } | undefined;
+  return row?.value;
 }
 
 // ─── Insert Helpers ───
@@ -93,6 +112,10 @@ export interface TableRow {
   pk_count: number;
   fk_count: number;
   is_view: boolean;
+  row_count?: number | null;
+  table_size?: string | null;
+  index_size?: string | null;
+  total_size?: string | null;
 }
 
 export interface ColumnRow {
@@ -128,7 +151,7 @@ export function insertAll(
   funcs: FuncRow[],
 ): void {
   const insertTable = db.prepare(
-    "INSERT OR REPLACE INTO tables (name, column_count, pk_count, fk_count, is_view) VALUES (?, ?, ?, ?, ?)",
+    "INSERT OR REPLACE INTO tables (name, column_count, pk_count, fk_count, is_view, row_count, table_size, index_size, total_size) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
   );
   const insertColumn = db.prepare(
     "INSERT INTO columns (table_name, name, type, nullable, default_value, is_pk, fk_table, fk_column, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -153,8 +176,10 @@ export function insertAll(
 
   const tx = db.transaction(() => {
     for (const t of tables) {
-      insertTable.run(safe(t.name), safe(t.column_count), safe(t.pk_count), safe(t.fk_count), safe(t.is_view));
-      insertFts.run(safe(t.name), "table", "", `${t.column_count} columns ${t.pk_count} PK ${t.fk_count} FK`, "");
+      insertTable.run(safe(t.name), safe(t.column_count), safe(t.pk_count), safe(t.fk_count), safe(t.is_view), safe(t.row_count), safe(t.table_size), safe(t.index_size), safe(t.total_size));
+      const sizeDetail = t.total_size ? ` | ${t.total_size}` : "";
+      const rowDetail = t.row_count != null ? ` | ~${t.row_count} rows` : "";
+      insertFts.run(safe(t.name), "table", "", `${t.column_count} columns ${t.pk_count} PK ${t.fk_count} FK${rowDetail}${sizeDetail}`, "");
     }
 
     for (const c of columns) {

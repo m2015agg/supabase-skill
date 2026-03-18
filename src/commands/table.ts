@@ -49,7 +49,10 @@ function runSqlite(schemaDir: string, name: string): void {
   const cols = getTableColumns(db, match);
 
   write(`# ${match}\n\n`);
-  write(`${info?.column_count || cols.length} columns | ${info?.pk_count || 0} PK | ${info?.fk_count || 0} FK\n\n`);
+  let summary = `${info?.column_count || cols.length} columns | ${info?.pk_count || 0} PK | ${info?.fk_count || 0} FK`;
+  if (info?.row_count != null) summary += ` | ~${info.row_count.toLocaleString()} rows`;
+  if (info?.total_size) summary += ` | ${info.total_size}`;
+  write(`${summary}\n\n`);
   renderColumnsSqlite(cols);
 
   // Relationships
@@ -87,7 +90,10 @@ function runSqlite(schemaDir: string, name: string): void {
     for (const relName of relatedNames) {
       const relInfo = getTableInfo(db, relName);
       if (relInfo) {
-        write(`- **${relName}**: ${relInfo.column_count} columns | ${relInfo.pk_count} PK | ${relInfo.fk_count} FK\n`);
+        let relSummary = `${relInfo.column_count} columns | ${relInfo.pk_count} PK | ${relInfo.fk_count} FK`;
+        if (relInfo.row_count != null) relSummary += ` | ~${relInfo.row_count.toLocaleString()} rows`;
+        if (relInfo.total_size) relSummary += ` | ${relInfo.total_size}`;
+        write(`- **${relName}**: ${relSummary}\n`);
       }
     }
     write("\n");

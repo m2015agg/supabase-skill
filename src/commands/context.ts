@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import {
   hasDb, openDb, getTableColumns, getRelatedTables, findMatchingFunctions,
-  getAllTableNames, type ColumnQueryResult,
+  getAllTableNames, getTableInfo, type ColumnQueryResult,
 } from "../util/db.js";
 
 function write(msg: string): void {
@@ -46,10 +46,13 @@ function parseTableFile(filePath: string): { columns: ColumnInfo[]; notes: strin
 
 // ─── SQLite Path ───
 
-function renderColumnsFromDb(cols: ColumnQueryResult[]): void {
+function renderColumnsFromDb(cols: ColumnQueryResult[], info?: { row_count?: number | null; total_size?: string | null }): void {
   const pkCount = cols.filter((c) => c.is_pk).length;
   const fkCount = cols.filter((c) => c.fk_table).length;
-  write(`${cols.length} columns | ${pkCount} PK | ${fkCount} FK\n\n`);
+  let summary = `${cols.length} columns | ${pkCount} PK | ${fkCount} FK`;
+  if (info?.row_count != null) summary += ` | ~${info.row_count.toLocaleString()} rows`;
+  if (info?.total_size) summary += ` | ${info.total_size}`;
+  write(`${summary}\n\n`);
 
   write("| Column | Type | Nullable | Default | FK |\n");
   write("|--------|------|----------|---------|----|");
@@ -107,9 +110,10 @@ function runSqlite(schemaDir: string, query: string, depth: number, jsonMode: bo
   for (const table of entryTables.slice(0, 5)) {
     const cols = getTableColumns(db, table);
     const related = getRelatedTables(db, table, depth);
+    const info = getTableInfo(db, table);
 
     write(`## ${table}\n`);
-    renderColumnsFromDb(cols);
+    renderColumnsFromDb(cols, info);
 
     const refs = related.filter((r) => r.direction === "references");
     const refBy = related.filter((r) => r.direction === "referenced by");

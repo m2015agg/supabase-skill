@@ -5,6 +5,7 @@ import { execSync } from "node:child_process";
 import { upsertSection } from "../util/claude-md.js";
 import { readConfig } from "../util/config.js";
 import { getSkillDoc } from "./docs.js";
+import { walkthroughTemplate } from "../templates/walkthrough.js";
 
 function write(msg: string): void {
   process.stdout.write(msg);
@@ -42,6 +43,13 @@ export function initCommand(): Command {
       const dotClaudeMd = join(dotClaudeDir, "CLAUDE.md");
       const dotResult = upsertSection(dotClaudeMd, skillDoc);
       write(`    .claude/CLAUDE.md: ${dotResult}\n`);
+
+      // Write walkthrough skill
+      const skillsDir = join(dotClaudeDir, "skills");
+      if (!existsSync(skillsDir)) mkdirSync(skillsDir, { recursive: true });
+      const walkthroughPath = join(skillsDir, "supabase-walkthrough.md");
+      writeFileSync(walkthroughPath, walkthroughTemplate);
+      write(`    .claude/skills/supabase-walkthrough.md: written\n`);
 
       // ─── 2. .env (secrets) ───
       write("\n  2/5 Writing .env with API keys...\n");
