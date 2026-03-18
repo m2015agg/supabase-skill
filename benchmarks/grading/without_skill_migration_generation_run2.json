@@ -1,9 +1,14 @@
-```json
 {
-  "pass": true,
-  "assertions_met": ["ALTER TABLE", "bibleai", "plan_blocks", "priority", "integer", "DEFAULT 0"],
-  "assertions_missed": [],
-  "quality_score": 5,
-  "notes": "All required assertions are present. The migration SQL is correct, complete, and well-structured with proper schema prefix, column type, and default value."
+  "pass": false,
+  "assertions_met": [],
+  "assertions_missed": [
+    "ALTER TABLE",
+    "bibleai",
+    "plan_blocks",
+    "priority",
+    "integer",
+    "DEFAULT 0"
+  ],
+  "quality_score": 1,
+  "notes": "The response is an error message indicating the AI reached its maximum turn limit. No migration SQL was generated, so none of the required assertions are met."
 }
-```

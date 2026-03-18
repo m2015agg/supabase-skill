@@ -3,24 +3,27 @@ Here's the FK chain:
 ```
 auth.users (Supabase Auth)
     │
-    │  (no FK constraint, but chat_sessions.user_id stores auth UID)
+    │  user_id (no FK constraint — loose reference)
     ▼
-chat_sessions
-  - id (PK, uuid)
-  - user_id (uuid, NOT NULL) — links to auth user, no DB-level FK
-  - is_pinned, is_deleted, title, context_summary, metadata...
+bibleai.chat_sessions
+    id  ←── session_id (FK)
     │
-    │  chat_messages.session_id → chat_sessions.id
     ▼
-chat_messages
-  - id (PK, uuid)
-  - session_id (uuid, FK → chat_sessions.id)
-  - role, content, context_sources, routing_metadata...
+bibleai.chat_messages
 ```
 
 **Key observations:**
 
-- `chat_sessions.user_id` has **no FK constraint** to `auth.users` — it's a bare UUID. User scoping is enforced by RLS, not a DB constraint.
-- `chat_messages.session_id` has a **real FK** to `chat_sessions.id` — messages can't orphan.
-- `chat_sessions` is also referenced by `gpt5_debug_logs.session_id` (for tracing AI calls per session).
-- Sessions have ~16K rows; messages have ~37K rows (~2.3 messages/session average), consuming 373 MB total.
+- `chat_sessions.user_id` → `auth.users.id` — **no enforced FK constraint** in the schema snapshot (Supabase auth tables live in a separate schema, so RLS policies enforce this instead)
+- `chat_messages.session_id` → `chat_sessions.id` — **proper FK constraint** enforced at the DB level
+- `chat_messages` has no direct `user_id` column — you must join through `chat_sessions` to get the user
+
+**To query messages for a user:**
+```sql
+SELECT m.*
+FROM bibleai.chat_messages m
+JOIN bibleai.chat_sessions s ON m.session_id = s.id
+WHERE s.user_id = '77b036d1-32a2-46f8-b1c6-a17e20752c8c';
+```
+
+Also notable: `chat_messages.resolved_by` (uuid) is another loose user reference — it stores the ID of whoever resolved a feedback item, but no FK to auth.users either.

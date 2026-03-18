@@ -1,1 +1,1 @@
-Waiting for your approval to run the SQL query against Supabase. Once granted, it will query `information_schema` to find all tables with foreign keys pointing to `bibleai.plans`.
+Waiting for your approval to run the SQL query. Please grant access to `mcp__supabase__execute_sql` to proceed.

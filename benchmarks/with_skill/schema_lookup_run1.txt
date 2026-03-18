@@ -1,6 +1,6 @@
-Here's the `episodes` table summary:
+Here's the `episodes` table schema:
 
-## episodes — 15 columns, ~397 rows
+**15 columns | ~397 rows**
 
 | Column | Type | Nullable | Default |
 |--------|------|----------|---------|
@@ -9,7 +9,7 @@ Here's the `episodes` table summary:
 | `provider_episode_id` | text | NOT NULL | — |
 | `discovered_at` | timestamptz | nullable | `now()` |
 | `downloaded_at` | timestamptz | nullable | — |
-| `status` | text | nullable | `new` |
+| `status` | text | nullable | `'new'` |
 | `audio_url` | text | nullable | — |
 | `file_path` | text | nullable | — |
 | `duration_seconds` | integer | nullable | — |
@@ -22,6 +22,6 @@ Here's the `episodes` table summary:
 
 **Foreign keys:**
 - `subscription_id` → `subscriptions.id`
-- `metadata_id` → `episode_metadata.id` (nullable)
+- `metadata_id` → `episode_metadata.id` (nullable — cleared during cascade delete)
 
-**Notable:** `status` defaults to `'new'`. The `processing_metadata` jsonb field stores AI analysis results. 22 downstream tables/views reference this table via `episode_id`.
+**NOT NULL constraints** (required on insert): `id`, `subscription_id`, `provider_episode_id`

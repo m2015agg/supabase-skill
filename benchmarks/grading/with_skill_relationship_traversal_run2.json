@@ -1,9 +1,12 @@
-```json
 {
   "pass": false,
-  "assertions_met": ["plan_days", "plan_blocks"],
-  "assertions_missed": ["plan_day_feedback"],
+  "assertions_met": [
+    "plan_days",
+    "plan_blocks"
+  ],
+  "assertions_missed": [
+    "plan_day_feedback"
+  ],
   "quality_score": 3,
-  "notes": "Response correctly identifies plan_days and plan_blocks relationships but misses plan_day_feedback, which should also have a foreign key pointing to plans (likely via plan_days). The response is otherwise accurate and well-structured."
+  "notes": "Response correctly identifies plan_days and plan_blocks as tables with foreign keys pointing to plans, and accurately describes the direct vs grandchild relationship. However, it misses plan_day_feedback, which should also be listed as a table related to plans (likely via plan_days). The response is otherwise well-structured and technically accurate for what it covers."
 }
-```

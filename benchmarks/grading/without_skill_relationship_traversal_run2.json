@@ -1,9 +1,11 @@
-```json
 {
   "pass": false,
   "assertions_met": [],
-  "assertions_missed": ["plan_days", "plan_blocks", "plan_day_feedback"],
+  "assertions_missed": [
+    "plan_days",
+    "plan_blocks",
+    "plan_day_feedback"
+  ],
   "quality_score": 1,
-  "notes": "The response is a permission request stub, not an actual answer. It contains none of the required assertions and provides no meaningful content about relationship traversal."
+  "notes": "The response contains no actual content \u2014 it only asks for permission to run a query. None of the required table names (plan_days, plan_blocks, plan_day_feedback) are mentioned. The response is a non-answer that fails all assertions."
 }
-```

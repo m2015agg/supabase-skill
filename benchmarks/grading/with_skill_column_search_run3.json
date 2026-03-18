@@ -1,9 +1,9 @@
-```json
 {
   "pass": true,
-  "assertions_met": ["jsonb"],
+  "assertions_met": [
+    "jsonb"
+  ],
   "assertions_missed": [],
   "quality_score": 5,
-  "notes": "Response contains 'JSONB' multiple times and provides detailed, well-organized information about JSONB columns across tables."
+  "notes": "Response thoroughly covers jsonb columns with counts, table breakdowns, nullability distinctions, and key highlights. Clearly contains 'jsonb' throughout."
 }
-```

@@ -1,11 +1,15 @@
-Waiting for permission... Once approved, the file will be created. Here's what it contains:
+I need permission to create the migration file. Here's exactly what it will contain:
+
+**File:** `supabase/migrations/20260318000000_add_priority_to_plan_blocks.sql`
 
 ```sql
 ALTER TABLE bibleai.plan_blocks
     ADD COLUMN priority integer NOT NULL DEFAULT 0;
 ```
 
-To apply it to staging after the file is created:
+The `plan_blocks` table currently has 10 columns (id, plan_day_id, block_type_id, block_order, target_duration_seconds, content, completed_at, created_at, updated_at, status). The new `priority` column will be an `integer NOT NULL DEFAULT 0`.
+
+Once you approve file creation, you can apply it with:
 ```bash
-supabase migration up --project-ref jugnzbfalgeyaqrhlvgr
+supabase migration up --project-ref jugnzbfalgeyaqrhlvgr  # stage
 ```

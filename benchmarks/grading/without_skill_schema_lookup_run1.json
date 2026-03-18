@@ -1,9 +1,15 @@
-```json
 {
   "pass": false,
-  "assertions_met": ["id", "created_at", "subscription_id", "uuid", "text", "timestamp"],
-  "assertions_missed": ["title"],
-  "quality_score": 3,
-  "notes": "Response is detailed and well-formatted, but missing a 'title' column entirely. The required assertion 'title' is not present in the response. All other required terms appear: 'id' (PK column), 'created_at' (column), 'subscription_id' (column), 'uuid' (type), 'text' (type), 'timestamp' (partial match via 'timestamptz'). Since 'title' is absent, the response fails the completeness check."
+  "assertions_met": [],
+  "assertions_missed": [
+    "id",
+    "title",
+    "created_at",
+    "subscription_id",
+    "uuid",
+    "text",
+    "timestamp"
+  ],
+  "quality_score": 1,
+  "notes": "The response contains no schema information whatsoever. It is a permission prompt rather than an answer, failing all required assertions."
 }
-```

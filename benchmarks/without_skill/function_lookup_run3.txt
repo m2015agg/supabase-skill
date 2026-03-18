@@ -1,11 +1,1 @@
-Please approve the `mcp__supabase__execute_sql` tool call — it's trying to query `pg_proc` to list bibleai schema functions.
-
-Once approved, it will run:
-
-```sql
-SELECT proname, pg_get_function_arguments(oid), pg_get_function_result(oid)
-FROM pg_proc
-JOIN pg_namespace ON pronamespace = oid
-WHERE nspname = 'bibleai'
-ORDER BY proname;
-```
+Please approve the `mcp__supabase__execute_sql` tool call to query the database. The query reads from `information_schema.routines` and `information_schema.parameters` — read-only, no mutations.

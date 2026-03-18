@@ -1,9 +1,12 @@
-```json
 {
   "pass": false,
-  "assertions_met": ["plan_days", "plan_blocks"],
-  "assertions_missed": ["plan_day_feedback"],
-  "quality_score": 3,
-  "notes": "Response correctly identifies plan_days and plan_blocks as tables with FK relationships to plans, but completely omits plan_day_feedback, which should also have a FK pointing to plans or plan_days. The response is otherwise well-structured with accurate FK chain description."
+  "assertions_met": [
+    "plan_days",
+    "plan_blocks"
+  ],
+  "assertions_missed": [
+    "plan_day_feedback"
+  ],
+  "quality_score": 2,
+  "notes": "Response correctly identifies plan_days and plan_blocks as tables with foreign keys to plans, but omits plan_day_feedback entirely. The response is incomplete \u2014 it misses a third table that also has a relationship to plans."
 }
-```

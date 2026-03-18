@@ -1,1 +1,1 @@
-Awaiting your permission to run the SQL query — please approve the `mcp__supabase__execute_sql` tool call, or I can try `mcp__supabase__list_tables` with `verbose=true` instead if you prefer.
+Please approve the `mcp__supabase__execute_sql` tool use so I can query the `bibleai.episodes` table schema.

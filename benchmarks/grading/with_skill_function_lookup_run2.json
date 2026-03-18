@@ -1,9 +1,10 @@
-```json
 {
   "pass": true,
-  "assertions_met": ["function", "parameter"],
+  "assertions_met": [
+    "function",
+    "parameter"
+  ],
   "assertions_missed": [],
   "quality_score": 5,
-  "notes": "Response contains both required terms extensively. Lists 48 RPC functions with their parameters in well-organized tables."
+  "notes": "Response clearly contains both required terms. 'function' appears throughout in table headers and function names; 'parameter' appears in column headers and descriptions. The response is comprehensive, well-organized, and accurately presents RPC functions grouped by category with their parameters."
 }
-```

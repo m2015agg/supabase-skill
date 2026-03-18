@@ -1,1 +1,1 @@
-It looks like the `mcp__supabase__execute_sql` tool needs permission approval. Please approve the permission prompt so I can run the query against the bibleai schema.
+Waiting on your permission to run `mcp__supabase__execute_sql`. Please approve the tool call and I'll return the results.

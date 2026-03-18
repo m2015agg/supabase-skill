@@ -1,9 +1,9 @@
-```json
 {
   "pass": true,
-  "assertions_met": ["jsonb"],
+  "assertions_met": [
+    "jsonb"
+  ],
   "assertions_missed": [],
   "quality_score": 5,
-  "notes": "Response clearly contains 'jsonb' throughout, listing 45 jsonb columns across 26 tables with detailed breakdown by table and NOT NULL constraints."
+  "notes": "Response thoroughly covers all jsonb columns across the database, organized by category with table names, column names, and NOT NULL constraints noted. Comprehensive and well-structured."
 }
-```

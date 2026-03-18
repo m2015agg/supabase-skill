@@ -1,11 +1,13 @@
-Permission denied for the MCP tool. Please grant access to `mcp__supabase__execute_sql` and I'll retry, or I can use the Supabase CLI instead:
+It looks like the `mcp__supabase__execute_sql` permission hasn't been granted yet. You can approve it in the permissions dialog, or allow it permanently in your Claude Code settings.
 
-```bash
-supabase db execute --project-ref jugnzbfalgeyaqrhlvgr --stdin <<< "
-SELECT table_name, column_name, data_type
+Once approved, the query I'm running is:
+
+```sql
+SELECT table_name, column_name, is_nullable, column_default
 FROM information_schema.columns
-WHERE table_schema = 'bibleai' AND data_type = 'jsonb'
-ORDER BY table_name, column_name;"
+WHERE table_schema = 'bibleai'
+  AND data_type = 'jsonb'
+ORDER BY table_name, column_name;
 ```
 
-Which would you prefer?
+Please approve the tool use and I'll re-run it.

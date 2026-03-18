@@ -1,10 +1,8 @@
 Two tables have foreign keys pointing to `plans`:
 
-| Table | Column | References |
-|-------|--------|------------|
-| `plan_days` | `plan_id` | `plans.id` |
-| `plan_blocks` | `plan_day_id` | `plans.id` (via plan_days) |
+| Table | Column | FK |
+|-------|--------|-----|
+| `plan_days` | `plan_id` | → `plans.id` |
+| `plan_blocks` | `plan_day_id` | → `plans.id` (via plan_days) |
 
-`plan_days` directly references `plans.id` via `plan_id`. `plan_blocks` references `plan_days.plan_day_id`, so it's an indirect reference one level down.
-
-Also noted: `plans` itself has one outgoing FK — `block_recipe_id → plan_block_recipes.id`.
+Note that `plan_blocks` points to `plan_days.plan_day_id`, not directly to `plans` — so `plan_days` is the direct child, and `plan_blocks` is a grandchild. Also, `plans` itself has one outbound FK: `block_recipe_id → plan_block_recipes.id`.

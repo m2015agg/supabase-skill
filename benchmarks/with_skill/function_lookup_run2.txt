@@ -1,67 +1,53 @@
-Here are all **48 RPC functions** available in the bibleai schema:
+Here are all 48 RPC functions grouped by category:
 
----
-
-## No Parameters
+## No-parameter Functions
 | Function | Purpose |
 |----------|---------|
-| `get_episode_statuses` | Episode status summary |
-| `refresh_unified_embeddings` | Refresh embedding materialized views |
+| `get_episode_statuses` | Episode pipeline statuses |
+| `refresh_unified_embeddings` | Refresh embedding materialized view |
 | `hard_delete_expired_plans` | Cleanup expired plans |
 
-## Single Parameter
-| Function | Parameter | Purpose |
-|----------|-----------|---------|
-| `bench_search` | `p_func: text` | Benchmark search function |
-| `bench_search_filtered` | `p_func: text` | Benchmark filtered search |
-| `delete_subscription` | `subscription_uuid: uuid` | Delete a subscription |
-| `increment_cache_hit` | `p_cache_id: uuid` | Track cache hit |
-| `match_story_by_name` | `p_name: text` | Match biblical story by name |
-| `get_plan_catalog` | `p_user_id: uuid` | Get plan catalog for user |
-| `get_episodes_with_metadata` | `limit_count: integer` | Episodes with metadata |
-| `match_theme_by_hash` | `p_hash: text` | Match theme by hash |
-| `app_set_home_church` | `p_subscription_id: uuid` | Set user's home church |
-| `app_get_episode_ai_payload` | `p_metadata_id: uuid` | Get AI payload for episode |
-
-## Multi-Parameter
-| Function | Parameters |
+## Single-parameter Functions
+| Function | Parameter |
 |----------|-----------|
-| `get_latency_stats` | `p_hours: int, p_stage: text` |
-| `merge_session_metadata` | `p_session_id: uuid, p_updates: jsonb` |
-| `merge_plan_metadata` | `p_plan_id: uuid, p_updates: jsonb` |
-| `merge_session_context` | `p_session_id: uuid, p_updates: jsonb` |
-| `get_plans_for_time_slot` | `slot_start: text, slot_end: text` |
-| `check_and_increment_usage` | `p_user_id: uuid, p_tier: int` |
-| `get_digest_users_for_time_slot` | `slot_start: text, slot_end: text` |
-| `fn_get_section_payload` | `p_episode_id: uuid, p_section_index: int` |
-| `browse_episodes` | `p_subscription_id: uuid, p_limit: int, p_offset: int` |
-| `get_latency_timeseries` | `p_hours: int, p_bucket_minutes: int, p_stage: text` |
-| `episode_bm25_search` | `p_episode_id: uuid, p_query: text, p_limit: int` |
-| `get_pipeline_episodes_v2` | `p_status_filter: text, p_limit: int, p_offset: int` |
-| `get_routing_stats` | `p_start_date: timestamptz, p_end_date: timestamptz` |
-| `get_prompt_recipe` | `p_plan_type: text, p_block_type: text, p_content_source: text` |
-| `get_chat_prompt_recipe` | `p_query_type: text, p_tier: text, p_user_type: text` |
-| `update_shep_prompt_file` | `p_file_key: text, p_content: text, p_updated_by: text` |
-| `find_sermons_by_story_name` | `p_story_name: text, p_min_score: float, p_limit: int` |
-| `upsert_role_subscription` | `p_user_id, p_role_key, p_provider, p_provider_subscription_id, p_status, p_current_period_end` |
-| `record_message_feedback` | `p_session_id: uuid, p_message_id: uuid, p_feedback_type: varchar, p_feedback_reason: text` |
+| `bench_search` | `p_func: text` |
+| `delete_subscription` | `subscription_uuid: uuid` |
+| `bench_search_filtered` | `p_func: text` |
+| `increment_cache_hit` | `p_cache_id: uuid` |
+| `match_story_by_name` | `p_name: text` |
+| `get_plan_catalog` | `p_user_id: uuid` |
+| `get_episodes_with_metadata` | `limit_count: integer` |
+| `match_theme_by_hash` | `p_hash: text` |
+| `app_set_home_church` | `p_subscription_id: uuid` |
+| `app_get_episode_ai_payload` | `p_metadata_id: uuid` |
 
-## Search Functions (Vector/Hybrid)
+## Multi-parameter Functions (notable)
 | Function | Key Parameters |
 |----------|---------------|
+| `get_latency_stats` | `p_hours: int, p_stage: text` |
+| `get_prompt_recipe` | `p_block_type, p_content_source, p_plan_type: text` |
+| `get_chat_prompt_recipe` | `p_query_type, p_tier, p_user_type: text` |
+| `check_and_increment_usage` | `p_tier: int, p_user_id: uuid` |
+| `record_message_feedback` | `p_feedback_reason, p_feedback_type, p_message_id, p_session_id` |
+| `merge_session_metadata` | `p_session_id: uuid, p_updates: jsonb` |
+| `merge_plan_metadata` | `p_plan_id: uuid, p_updates: jsonb` |
+| `update_shep_prompt_file` | `p_content, p_file_key, p_updated_by: text` |
+| `upsert_role_subscription` | `p_user_id, p_role_key, p_provider, p_status, p_provider_subscription_id, p_current_period_end` |
+
+## Search Functions
+| Function | Core Parameters |
+|----------|----------------|
+| `search_candidates_fast` | `p_query_embedding: vector, p_subscription_ids: uuid[], p_match_count: int, p_match_threshold: float, + filters` |
+| `search_unified_fast` | Same as above + `p_book_names, p_speaker_name` |
+| `search_unified_hybrid` | Adds `p_query_text` for BM25+vector hybrid |
+| `search_hybrid` | Adds `p_query_intent, p_rrf_k` |
+| `search_bm25_candidates` | `p_query_text: text, p_subscription_ids, p_episode_ids, p_content_types, p_fetch_k: int` |
+| `episode_semantic_search` | `p_embedding: vector, p_episode_id: uuid, p_limit: int` |
+| `episode_bm25_search` | `p_query: text, p_episode_id: uuid, p_limit: int` |
+| `search_scripture_by_topic` | `p_query_embedding: vector, p_subscription_ids, p_match_count, p_match_threshold` |
+| `search_biblical_stories` | `p_query_embedding: vector, p_book, p_category: text, p_match_count, p_match_threshold` |
 | `search_response_cache` | `p_query_embedding: vector, p_similarity_threshold: float, p_limit: int` |
-| `search_scripture_by_topic` | `p_query_embedding: vector, p_subscription_ids: uuid[], p_match_count: int, p_match_threshold: float` |
-| `search_sermon_content` | `query_embedding: vector, content_types: text[], filter_episode_ids: uuid[], match_count: int, match_threshold: float` |
-| `search_bm25_candidates` | `p_query_text: text, p_subscription_ids: uuid[], p_content_types: text[], p_episode_ids: uuid[], p_fetch_k: int` |
-| `search_biblical_stories` | `p_query_embedding: vector, p_book: text, p_category: text, p_match_count: int, p_match_threshold: float` |
-| `search_with_anchors` | `p_query_embedding: vector, p_subscription_ids: uuid[], p_anchor_categories: text[], p_content_types: text[], p_match_count/threshold` |
-| `search_candidates_fast` | `p_query_embedding: vector, p_subscription_ids: uuid[], p_book_names: text[], p_speaker_name: text, p_anchor_categories: text[], ...` |
-| `search_unified_fast` | Same as `search_candidates_fast` + unified results |
-| `search_hybrid` | `p_query_embedding: vector, p_query_text: text, p_query_intent: text, p_rrf_k: int, ...` |
-| `search_unified_hybrid` | `p_query_embedding: vector, p_query_text: text, p_subscription_ids: uuid[], p_book_names: text[], p_speaker_name: text, ...` |
-| `search_candidates_simple` | Simplified version of `search_candidates_fast` (no book/speaker filters) |
-| `count_topic_matches` | `query_embedding: vector, subscription_ids: uuid[], similarity_threshold: float, limit_count: int` |
-| `count_topic_matches_fast` | `topic: text, subscription_ids: uuid[], limit_count: int` |
-| `count_topic_matches_intersection` | `topics: text[], subscription_ids: uuid[], limit_count: int` |
-| `find_sermons_for_story` | `p_story_id: uuid, p_confidence_threshold, p_vector_threshold, p_xref_min_votes, p_min_score, p_limit` |
-| `episode_semantic_search` | `p_episode_id: uuid, p_embedding: vector, p_limit: int` |
+| `find_sermons_by_story_name` | `p_story_name: text, p_min_score: float, p_limit: int` |
+| `find_sermons_for_story` | `p_story_id: uuid, + score thresholds` |
+
+For full details on any function, run `supabase-skill table <function-name>` or read `.supabase-schema/functions.md`.

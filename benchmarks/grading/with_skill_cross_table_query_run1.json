@@ -1,9 +1,13 @@
-```json
 {
   "pass": true,
-  "assertions_met": ["chat_messages", "chat_sessions", "users", "foreign key", "user_id"],
+  "assertions_met": [
+    "chat_messages",
+    "chat_sessions",
+    "users",
+    "foreign key",
+    "user_id"
+  ],
   "assertions_missed": [],
   "quality_score": 5,
-  "notes": "All required terms present. Response accurately describes the FK chain, correctly notes the hard FK between chat_messages and chat_sessions, and correctly identifies the logical (not declared) relationship between chat_sessions.user_id and auth.users."
+  "notes": "All required assertions are present. The response clearly identifies chat_messages, chat_sessions, users (via auth.users), foreign key relationships (both the enforced FK on session_id and the missing FK on user_id), and user_id. The answer is detailed, accurate, and well-structured."
 }
-```

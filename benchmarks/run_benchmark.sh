@@ -107,10 +107,32 @@ Return ONLY a JSON object with these fields:
 GRADEEOF
 )
 
-  claude -p "$grade_prompt" \
+  # Get grading response and extract the last valid JSON object
+  local raw_output
+  raw_output=$(claude -p "$grade_prompt" \
     --model "$MODEL" \
-    --max-turns 1 \
-    > "$grade_file" 2>&1 || true
+    --max-turns 1 2>&1 || true)
+
+  # Extract the last JSON object from the response (grader sometimes includes prose)
+  echo "$raw_output" | python3 -c "
+import sys, re, json
+text = sys.stdin.read()
+# Find all JSON-like blocks
+blocks = re.findall(r'\{[^{}]*\}', text, re.DOTALL)
+# Take the last one that has 'pass' key
+result = None
+for b in reversed(blocks):
+    try:
+        d = json.loads(b)
+        if 'pass' in d:
+            result = d
+            break
+    except: pass
+if result:
+    json.dump(result, sys.stdout, indent=2)
+else:
+    json.dump({'pass': False, 'quality_score': 0, 'assertions_met': [], 'assertions_missed': [], 'notes': 'Failed to parse grading output'}, sys.stdout, indent=2)
+" > "$grade_file" 2>/dev/null || echo '{"pass":false,"quality_score":0,"assertions_met":[],"assertions_missed":[],"notes":"parse error"}' > "$grade_file"
 }
 
 # =============================================================================

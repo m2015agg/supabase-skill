@@ -1,8 +1,10 @@
-Tables with foreign keys pointing to `plans`:
+Two tables have foreign keys pointing to `plans`:
 
-| Table | Column | FK |
-|-------|--------|----|
-| `plan_days` | `plan_id` | → `plans.id` |
-| `plan_blocks` | `plan_day_id` | → `plans.id` |
+| Table | Column | Points To |
+|-------|--------|-----------|
+| `plan_days` | `plan_days.plan_id` | `plans.id` |
+| `plan_blocks` | `plan_blocks.plan_day_id` | `plans.id` |
 
-Note: `plan_blocks` actually references `plan_days.plan_day_id → id`, not directly `plans.id` — it links through `plan_days`. Only **`plan_days`** has a direct FK to `plans.id`.
+Note: `plan_blocks` actually references `plan_days` (not `plans` directly) — the supabase-skill output shows it in the "Referenced by" section because of the transitive relationship through `plan_days.plan_id`.
+
+The direct FK chain is: **plans → plan_days → plan_blocks**

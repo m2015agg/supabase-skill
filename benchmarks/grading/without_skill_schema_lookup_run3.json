@@ -1,9 +1,15 @@
-```json
 {
   "pass": false,
   "assertions_met": [],
-  "assertions_missed": ["id", "title", "created_at", "subscription_id", "uuid", "text", "timestamp"],
+  "assertions_missed": [
+    "id",
+    "title",
+    "created_at",
+    "subscription_id",
+    "uuid",
+    "text",
+    "timestamp"
+  ],
   "quality_score": 1,
-  "notes": "The response did not provide any schema information. It only asked for tool approval without returning any actual data about the schema fields required by the assertions."
+  "notes": "The response did not provide any schema information. It only asked for permission to run a query instead of returning the actual schema data with the required fields."
 }
-```

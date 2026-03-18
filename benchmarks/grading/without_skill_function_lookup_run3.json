@@ -1,9 +1,10 @@
-```json
 {
   "pass": true,
-  "assertions_met": ["function", "parameter"],
+  "assertions_met": [
+    "function",
+    "parameter"
+  ],
   "assertions_missed": [],
-  "quality_score": 4,
-  "notes": "Both required terms are present: 'function' appears in 'pg_get_function_arguments' and 'pg_get_function_result', and 'parameter' is implied via 'pg_get_function_arguments'. The response is a reasonable SQL query for listing schema functions with their signatures."
+  "quality_score": 3,
+  "notes": "Both required terms are present: 'function' (implied via routines/functions context) and 'parameter' (explicitly in information_schema.parameters). However, the response is just a tool approval request rather than an actual answer, so quality is adequate but not excellent."
 }
-```

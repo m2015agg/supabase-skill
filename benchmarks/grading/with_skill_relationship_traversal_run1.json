@@ -1,9 +1,12 @@
-```json
 {
   "pass": false,
-  "assertions_met": ["plan_days", "plan_blocks"],
-  "assertions_missed": ["plan_day_feedback"],
+  "assertions_met": [
+    "plan_days",
+    "plan_blocks"
+  ],
+  "assertions_missed": [
+    "plan_day_feedback"
+  ],
   "quality_score": 2,
-  "notes": "Response mentions plan_days and plan_blocks but completely omits plan_day_feedback, which is required. The response is also internally inconsistent — it lists plan_blocks as having FK to plans.id in the table, then contradicts itself in the note. Partial credit only."
+  "notes": "Response correctly identifies plan_days and plan_blocks as tables with FK relationships to plans, but completely omits plan_day_feedback, which should also be mentioned as part of the relationship traversal. The response is incomplete."
 }
-```

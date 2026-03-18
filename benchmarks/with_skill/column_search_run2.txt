@@ -1,18 +1,22 @@
-Found **45 jsonb columns** across **26 tables**. Here's a summary by area:
+Found **45 jsonb columns** across **26 tables**. Here's a summary of the key clusters:
 
-| Area | Tables with jsonb |
-|------|-----------------|
-| **Chat** | `chat_messages` (4 cols), `chat_sessions` (2 cols) |
-| **Plans** | `plan_blocks`, `plan_block_recipes`, `plan_block_types`, `plan_days`, `plan_prompt_recipes`, `plan_rag_recipes`, `plans` |
-| **Transcription** | `transcribe` (diarized_json, transcript_json), `episode_chunks` (char_time_map, word_segments) |
-| **Logging/Debug** | `gpt5_debug_logs` (3 cols), `lizi_run_logs` (5 cols), `latency_metrics`, refresh/transcribe job runs |
-| **Entitlements** | `effective_entitlements`, `role_entitlements`, `user_entitlements` |
-| **AI Content** | `ai_application_analysis`, `ai_illustrations`, `biblical_stories` |
+**Chat/Session data:**
+- `chat_messages` — `context_sources`, `debug_log`, `processing_metadata`, `routing_metadata`
+- `chat_sessions` — `context_summary`, `metadata`
 
-Notable **NOT NULL** jsonb columns (must always have a value):
-- `plan_blocks.content`
-- `plan_block_types.output_schema`
-- `plan_block_recipes.recipe_definition`
-- `plans.source_details`
-- `role_entitlements.value` / `user_entitlements.value`
-- `transcript_preprocessed.position_map`
+**Transcription:**
+- `episode_chunks` — `char_time_map`, `word_segments`
+- `transcribe` — `diarized_json`, `transcript_json`
+
+**Plans/Blocks:**
+- `plan_blocks.content` (NOT NULL) — block content
+- `plan_block_types.output_schema` (NOT NULL) — block type schemas
+- `plan_block_recipes.recipe_definition` (NOT NULL) — recipe definitions
+- `plans.source_details` (NOT NULL) — plan source config
+
+**Debugging/Logs:**
+- `gpt5_debug_logs` — `json_schema`, `parsed_response`, `raw_response`
+- `lizi_run_logs` — `config`, `error_details`, `queue_stats`, `results_summary`, `structured_log`
+
+**Entitlements:**
+- `role_entitlements.value`, `user_entitlements.value`, `effective_entitlements.value` — all store entitlement values as jsonb

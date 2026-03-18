@@ -1,9 +1,9 @@
-```json
 {
   "pass": true,
-  "assertions_met": ["jsonb"],
+  "assertions_met": [
+    "jsonb"
+  ],
   "assertions_missed": [],
-  "quality_score": 5,
-  "notes": "Response thoroughly covers jsonb columns across all tables, includes nullability details, and provides a helpful summary of NOT NULL jsonb columns."
+  "quality_score": 3,
+  "notes": "Response contains 'jsonb' but is incomplete \u2014 it's a permission-pending message rather than an actual answer. The task required finding jsonb columns, but the response never executed the query or provided results."
 }
-```

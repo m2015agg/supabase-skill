@@ -1,15 +1,13 @@
-45 JSONB columns across 26 tables:
+Here are all **45 jsonb columns** across **26 tables**:
 
-**Heavy JSONB users:**
-- `chat_messages` — 4 columns: `context_sources`, `debug_log`, `processing_metadata`, `routing_metadata`
-- `lizi_run_logs` — 5 columns: `config`, `error_details`, `queue_stats`, `results_summary`, `structured_log`
-- `gpt5_debug_logs` — 3 columns: `json_schema`, `parsed_response`, `raw_response`
-- `plan_rag_recipes` — 3 columns: `block_rag_overrides`, `block_segment_counts`, `pre_processing`
+**Key highlights:**
 
-**NOT NULL JSONB (required fields):**
-- `plan_block_recipes.recipe_definition`
-- `plan_block_types.output_schema`
-- `plan_blocks.content`
-- `plans.source_details`
-- `role_entitlements.value`, `user_entitlements.value`
-- `transcript_preprocessed.position_map`
+- **`chat_messages`** — 4 jsonb columns (`context_sources`, `debug_log`, `processing_metadata`, `routing_metadata`) — most jsonb-heavy table
+- **`lizi_run_logs`** — 5 jsonb columns (config, error details, queue stats, results summary, structured log)
+- **`gpt5_debug_logs`** — 3 jsonb columns (json_schema, parsed_response, raw_response) — stores full API interaction data
+- **`plan_blocks`** — `content jsonb NOT NULL` — core plan content storage
+- **`plans`** — `source_details jsonb NOT NULL` — required plan metadata
+- **`transcribe`** — stores both `diarized_json` and `transcript_json` as jsonb
+- **`plan_block_types`** — `output_schema jsonb NOT NULL` — Claude structured output schemas live here
+
+Most jsonb columns are nullable (flexible metadata/debug storage), with only 6 marked `NOT NULL` (`plan_block_recipes.recipe_definition`, `plan_block_types.output_schema`, `plan_blocks.content`, `plans.source_details`, `role_entitlements.value`, `user_entitlements.value`).

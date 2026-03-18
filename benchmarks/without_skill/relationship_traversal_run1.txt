@@ -1,11 +1,1 @@
-From the local schema snapshot, here are all tables with foreign keys pointing to `plans`:
-
-| Referencing Table | Column | → Referenced |
-|---|---|---|
-| **`plan_days`** | `plan_id` | `plans.id` |
-
-That's the only direct FK reference to `plans` in the snapshot. `plan_days.plan_id → plans.id` is the sole relationship.
-
-Note also that `plans` itself has an outbound FK: `plans.block_recipe_id → plan_block_recipes.id`, but that points away from `plans`.
-
-The snapshot may be slightly stale — if you want a live query, approve the `mcp__supabase__execute_sql` or `supabase db execute` tool call and I'll run the SQL above against the staging database.
+Please grant permission to run the SQL query — it's a read-only `SELECT` against `information_schema` on staging.

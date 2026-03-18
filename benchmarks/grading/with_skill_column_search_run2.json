@@ -1,9 +1,9 @@
-```json
 {
   "pass": true,
-  "assertions_met": ["jsonb"],
+  "assertions_met": [
+    "jsonb"
+  ],
   "assertions_missed": [],
   "quality_score": 5,
-  "notes": "Response clearly contains 'jsonb' throughout and provides a comprehensive, well-organized summary of jsonb columns across the schema."
+  "notes": "Response clearly contains 'jsonb' multiple times and provides a comprehensive, well-organized summary of jsonb columns across the database schema."
 }
-```

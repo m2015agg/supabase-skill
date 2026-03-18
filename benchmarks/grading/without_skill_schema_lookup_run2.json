@@ -1,9 +1,15 @@
-```json
 {
   "pass": false,
   "assertions_met": [],
-  "assertions_missed": ["id", "title", "created_at", "subscription_id", "uuid", "text", "timestamp"],
+  "assertions_missed": [
+    "id",
+    "title",
+    "created_at",
+    "subscription_id",
+    "uuid",
+    "text",
+    "timestamp"
+  ],
   "quality_score": 1,
-  "notes": "The response did not contain any of the required schema information. Instead of returning schema details, the AI asked for permission to run a query, providing no column names, types, or schema data whatsoever."
+  "notes": "The response did not provide any schema information. It only asked for tool approval without returning any actual data about the table columns."
 }
-```

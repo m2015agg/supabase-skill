@@ -1,9 +1,9 @@
-```json
 {
   "pass": false,
   "assertions_met": [],
-  "assertions_missed": ["jsonb"],
+  "assertions_missed": [
+    "jsonb"
+  ],
   "quality_score": 1,
-  "notes": "The response does not contain 'jsonb' at all. It's a deflection response asking for permission approval rather than providing any actual answer about columns. The required assertion 'jsonb' is completely absent."
+  "notes": "The response contains no actual answer - it's just a permission request to run a SQL query. It doesn't mention 'jsonb' or provide any column search results."
 }
-```

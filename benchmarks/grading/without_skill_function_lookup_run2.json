@@ -1,9 +1,10 @@
-```json
 {
   "pass": true,
-  "assertions_met": ["function", "parameter"],
+  "assertions_met": [
+    "function",
+    "parameter"
+  ],
   "assertions_missed": [],
-  "quality_score": 4,
-  "notes": "Both required terms are present: 'function' appears multiple times (function_name, pg_get_function_arguments, etc.) and 'parameter' appears in 'parameters' column alias and 'pg_get_function_arguments'. The response provides helpful alternatives for a permission issue."
+  "quality_score": 2,
+  "notes": "Both required keywords 'function' and 'parameter' are present in the response, so it technically passes the assertion check. However, the response is incomplete \u2014 it asks for tool approval rather than actually providing function and parameter information. The quality is low because it contains no actual data, just a request for permission."
 }
-```

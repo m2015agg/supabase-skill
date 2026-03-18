@@ -1,1 +1,1 @@
-Permission needed — please approve the `mcp__supabase__execute_sql` tool call above to query the database.
+I need permission to run the Supabase SQL query. Please approve the `mcp__supabase__execute_sql` tool call, then I'll fetch the foreign key references to the `plans` table.

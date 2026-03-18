@@ -1,9 +1,13 @@
-```json
 {
   "pass": true,
-  "assertions_met": ["chat_messages", "chat_sessions", "users", "foreign key", "user_id"],
+  "assertions_met": [
+    "chat_messages",
+    "chat_sessions",
+    "users",
+    "foreign key",
+    "user_id"
+  ],
   "assertions_missed": [],
   "quality_score": 5,
-  "notes": "All required assertions present. Response clearly explains the FK chain between chat_messages, chat_sessions, and users, explicitly calls out the foreign key relationship, and references user_id. Diagram and plain-text explanation are accurate and well-structured."
+  "notes": "All required assertions are present. The response clearly explains the FK chain between chat_sessions, chat_messages, and users, distinguishes between enforced and soft foreign key relationships, and provides a practical query example."
 }
-```

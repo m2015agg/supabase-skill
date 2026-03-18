@@ -1,1 +1,1 @@
-Please grant permission to use the Supabase MCP tool (`mcp__supabase__execute_sql`) so I can query the database for the RPC functions.
+Waiting on your permission to run that query. Once approved, it will list all functions in the `bibleai` schema with their parameter names and types from `information_schema.routines` + `information_schema.parameters`.

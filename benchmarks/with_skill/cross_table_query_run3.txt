@@ -2,24 +2,23 @@ Here's the FK chain:
 
 ```
 auth.users (Supabase Auth)
-    ↑ (logical link, no FK constraint)
-    │  user_id (uuid)
-    │
-bibleai.chat_sessions
-    id (PK)  ←─── session_id (FK, NOT NULL)
-    user_id               │
-                          │
-                 bibleai.chat_messages
-                     id (PK)
-                     session_id → chat_sessions.id  ✓ enforced FK
-                     role, content, ...
+    ↓  (no enforced FK, but logical join)
+bibleai.chat_sessions  (user_id uuid → auth.users.id)
+    ↓  chat_messages.session_id → chat_sessions.id  [enforced FK]
+bibleai.chat_messages
 ```
 
 **Key observations:**
 
-- `chat_messages.session_id → chat_sessions.id` — hard FK constraint, enforced by the DB
-- `chat_sessions.user_id` — **no FK constraint** to `auth.users`; it's a logical reference only (0 FKs shown on `chat_sessions`)
-- `chat_messages.resolved_by` is also a `uuid` user reference with no FK constraint
+- `chat_sessions.user_id` references `auth.users.id` but **no database-level FK constraint** is defined — it's a logical/soft relationship only (common in Supabase when the referenced table is in a different schema, `auth` vs `bibleai`)
+- `chat_messages.session_id → chat_sessions.id` is a **hard FK constraint** (enforced)
+- `chat_messages` also has `resolved_by uuid` which is another soft user reference (no FK)
 
-**The chain in plain terms:**
-> A user (auth.users) owns many **sessions** (`chat_sessions.user_id`). Each session contains many **messages** (`chat_messages.session_id`). The only enforced FK is messages → sessions.
+**To query the full chain:**
+```python
+# Sessions for a user
+await supabase.schema('bibleai').table('chat_sessions')\
+    .select('*, chat_messages(*)')\
+    .eq('user_id', user_id)\
+    .execute()
+```

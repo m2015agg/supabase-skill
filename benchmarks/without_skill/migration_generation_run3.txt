@@ -1,32 +1,18 @@
-I need write permission to create the migration file. The `plan_blocks` table currently has these columns:
+No write permission granted. Here's the migration SQL to create manually:
 
-| Column | Type | Default |
-|--------|------|---------|
-| id | uuid | gen_random_uuid() |
-| plan_day_id | uuid | |
-| block_type_id | uuid | |
-| block_order | integer | |
-| target_duration_seconds | integer | |
-| content | jsonb | |
-| completed_at | timestamptz | |
-| created_at | timestamptz | now() |
-| updated_at | timestamptz | now() |
-| status | text | 'locked' |
-
-The migration SQL to add the `priority` column is:
+**File:** `supabase/migrations/20260318000000_add_priority_to_plan_blocks.sql`
 
 ```sql
 ALTER TABLE bibleai.plan_blocks
-  ADD COLUMN priority integer NOT NULL DEFAULT 0;
+    ADD COLUMN priority integer NOT NULL DEFAULT 0;
 ```
 
-To create and apply it:
+**Current `plan_blocks` columns** (from schema snapshot):
+- `id`, `plan_day_id`, `block_type_id`, `block_order`, `target_duration_seconds`, `content`, `completed_at`, `created_at`, `updated_at`, `status`
+
+No existing `priority` column — safe to add.
+
+**To apply to staging:**
 ```bash
-# Create
-supabase migration new add_priority_to_plan_blocks
-# Edit the new file with the ALTER TABLE above
-# Apply to staging
 supabase migration up --project-ref jugnzbfalgeyaqrhlvgr
 ```
-
-Would you like me to create and apply the migration file? I'll need write permission to `supabase/migrations/`.

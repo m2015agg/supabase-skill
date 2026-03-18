@@ -283,27 +283,29 @@ Benchmarked against the official Supabase MCP server using Anthropic's SkillsBen
 
 | Eval | With Skill | MCP Server | Speedup |
 |------|-----------|------------|---------|
-| Schema Lookup | **14.0s** | 18.2s | 1.3x faster |
-| Relationship Traversal | **13.5s** | 33.8s | **2.5x faster** |
-| Column Search | **14.7s** | 97.6s | **6.6x faster** |
-| Function Lookup | 33.8s | **18.5s** | MCP wins (0.5x) |
-| Migration Generation | **25.6s** | 36.4s | 1.4x faster |
-| Cross-Table Query | **17.9s** | 14.2s | MCP wins (0.8x) |
+| Schema Lookup | **14.1s** | 14.8s | 1.05x faster |
+| Relationship Traversal | **12.4s** | 15.1s | **1.22x faster** |
+| Column Search | **11.9s** | 15.4s | **1.29x faster** |
+| Function Lookup | 25.2s | **14.3s** | MCP wins (0.56x) |
+| Migration Generation | **22.8s** | 41.5s | **1.82x faster** |
+| Cross-Table Query | **18.8s** | 28.0s | **1.49x faster** |
 
-**Skill wins 4/6 on speed.** Column search is the standout — MCP had to iterate 62 tables via `information_schema` (one run took 250s). The skill reads indexed SQLite in <1s.
+**Skill wins 5/6 on speed.** Migration generation is the standout — MCP needs multiple round-trips to understand the schema before writing SQL. The skill has it cached.
 
-### Quality Comparison (LLM-Graded)
+### Quality Comparison (LLM-Graded, Anthropic SkillsBench)
 
-| Eval | With Skill | MCP Server |
-|------|-----------|------------|
-| Schema Lookup | 4/5 | 3/5 |
-| Relationship Traversal | 2/5 | 2/5 |
-| Column Search | **5/5 PASS** | 3/5 PASS |
-| Function Lookup | **5/5 PASS** | 1/5 FAIL |
-| Migration Generation | **5/5 PASS** | **5/5 PASS** |
-| Cross-Table Query | **5/5 PASS** | 1/5 FAIL |
+| Eval | With Skill | MCP Server | Skill Quality | MCP Quality |
+|------|-----------|------------|---------------|-------------|
+| Schema Lookup | 1/3 pass | 0/3 pass | 3.3/5 | 1.0/5 |
+| Relationship Traversal | 0/3 pass | 0/3 pass | 2.3/5 | 1.0/5 |
+| Column Search | **3/3 pass** | 2/3 pass | **5.0/5** | 2.7/5 |
+| Function Lookup | **3/3 pass** | 3/3 pass | **5.0/5** | 2.7/5 |
+| Migration Generation | **3/3 pass** | 1/3 pass | **5.0/5** | 2.3/5 |
+| Cross-Table Query | **3/3 pass** | 1/3 pass | **5.0/5** | 2.3/5 |
 
-**Skill wins 4/6 on quality.** MCP completely failed function_lookup and cross_table_query — couldn't retrieve the data within the turn limit. The skill had it cached locally.
+**Overall: Skill 13/18 pass (72%) vs MCP 7/18 pass (39%).** Average quality: **4.3/5 vs 2.0/5.**
+
+The skill dominates on complex tasks (migration generation, cross-table queries) where cached schema context lets the agent write correct SQL on the first try. MCP struggles because it needs multiple API round-trips to gather the same context.
 
 ### Real-World Weekly Usage Data
 

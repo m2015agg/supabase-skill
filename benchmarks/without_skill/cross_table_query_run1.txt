@@ -1,1 +1,1 @@
-Waiting for your permission to run the SQL query. Once approved, I'll pull the FK relationships for `chat_sessions` and `chat_messages` in the `bibleai` schema.
+Please approve the `mcp__supabase__execute_sql` tool call — it needs permission to query the foreign key metadata from `information_schema`.
