@@ -16,6 +16,12 @@ const SKILL_PERMISSIONS = [
   "Bash(supabase-skill columns:*)",
   "Bash(supabase-skill envs:*)",
   "Bash(supabase-skill docs:*)",
+  "Bash(supabase-skill functions:*)",
+  "Bash(supabase-skill indexes:*)",
+  "Bash(supabase-skill enums:*)",
+  "Bash(supabase-skill policies:*)",
+  "Bash(supabase-skill triggers:*)",
+  "Bash(supabase-skill views:*)",
   "Bash(supabase-skill cron --status:*)",
   // Snapshot (fetches from API but writes locally)
   "Bash(supabase-skill snapshot:*)",
@@ -119,7 +125,8 @@ export function approveCommand(): Command {
       }
 
       write("  Approved commands (Claude won't prompt for these):\n");
-      write("    supabase-skill: search, context, table, columns, envs, docs, snapshot\n");
+      write("    supabase-skill: search, context, table, columns, functions, indexes,\n");
+      write("                    enums, policies, triggers, views, envs, docs, snapshot\n");
       write("    supabase CLI:   projects list, branches list, functions list, inspect,\n");
       write("                    migration list, db dump/diff/lint, backups list, gen types\n");
       write("\n  NOT approved (Claude will still ask — these modify data):\n");

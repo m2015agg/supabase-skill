@@ -16,13 +16,19 @@ import { updateCommand } from "./commands/update.js";
 import { doctorCommand } from "./commands/doctor.js";
 import { diffCommand } from "./commands/diff.js";
 import { graphCommand } from "./commands/graph.js";
+import { functionsCommand } from "./commands/functions.js";
+import { indexesCommand } from "./commands/indexes.js";
+import { enumsCommand } from "./commands/enums.js";
+import { policiesCommand } from "./commands/policies.js";
+import { triggersCommand } from "./commands/triggers.js";
+import { viewsCommand } from "./commands/views.js";
 
 const program = new Command();
 
 program
   .name("supabase-skill")
   .description("Supabase CLI skill for AI agents. Installs comprehensive CLI instructions into CLAUDE.md with multi-environment support.")
-  .version("0.7.6");
+  .version("0.8.0");
 
 program.addCommand(installCommand());
 program.addCommand(initCommand());
@@ -40,5 +46,11 @@ program.addCommand(updateCommand());
 program.addCommand(doctorCommand());
 program.addCommand(diffCommand());
 program.addCommand(graphCommand());
+program.addCommand(functionsCommand());
+program.addCommand(indexesCommand());
+program.addCommand(enumsCommand());
+program.addCommand(policiesCommand());
+program.addCommand(triggersCommand());
+program.addCommand(viewsCommand());
 
 program.parse();

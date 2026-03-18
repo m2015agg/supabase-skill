@@ -4,8 +4,9 @@ import { join } from "node:path";
 import { mkdirSync, writeFileSync, existsSync, rmSync } from "node:fs";
 import { readConfig } from "../util/config.js";
 import {
-  openDb, initSchema, clearData, insertAll, setMetadata,
+  openDb, initSchema, clearData, insertAll, setMetadata, insertPgCatalogData,
   type TableRow, type ColumnRow, type RelRow, type FuncRow,
+  type IndexRow, type EnumRow, type PolicyRow, type TriggerRow, type ViewRow,
 } from "../util/db.js";
 
 interface ColumnDef {
@@ -280,6 +281,173 @@ function fetchTableStats(): Map<string, TableStats> {
   return stats;
 }
 
+function runSQL(serviceKey: string, projectRef: string, schema: string, sql: string): string {
+  const baseUrl = `https://${projectRef}.supabase.co`;
+  try {
+    return execSync(
+      `curl -s "${baseUrl}/rest/v1/rpc/" -X POST -H "apikey: ${serviceKey}" -H "Authorization: Bearer ${serviceKey}" -H "Content-Profile: ${schema}" -H "Content-Type: application/json" -d '${JSON.stringify({ query: sql }).slice(1, -1).replace(/'/g, "'\\''")}'`,
+      { encoding: "utf-8", timeout: 30000 },
+    );
+  } catch {
+    return "";
+  }
+}
+
+function fetchPgCatalogData(serviceKey: string, projectRef: string, schema: string): {
+  indexes: IndexRow[];
+  enums: EnumRow[];
+  policies: PolicyRow[];
+  triggers: TriggerRow[];
+  viewDefs: ViewRow[];
+} {
+  const baseUrl = `https://${projectRef}.supabase.co`;
+
+  function pgQuery(sql: string): unknown[] {
+    try {
+      // Use the PostgREST /rpc endpoint won't work for raw SQL
+      // Instead use the management API or fall back to supabase inspect
+      const result = execSync(
+        `curl -s "${baseUrl}/rest/v1/rpc/exec_sql" -X POST -H "apikey: ${serviceKey}" -H "Authorization: Bearer ${serviceKey}" -H "Content-Type: application/json" -d '{"query":"${sql.replace(/"/g, '\\"').replace(/'/g, "''")}"}'`,
+        { encoding: "utf-8", timeout: 30000 },
+      );
+      return JSON.parse(result) || [];
+    } catch {
+      return [];
+    }
+  }
+
+  // Since we can't run arbitrary SQL via REST, use supabase CLI inspect commands
+  // and parse their output, or use psql if available
+  const indexes: IndexRow[] = [];
+  const enums: EnumRow[] = [];
+  const policies: PolicyRow[] = [];
+  const triggers: TriggerRow[] = [];
+  const viewDefs: ViewRow[] = [];
+
+  // --- Indexes via supabase inspect ---
+  try {
+    const output = execSync("supabase inspect db index-usage 2>&1", {
+      encoding: "utf-8", timeout: 30000,
+    });
+    for (const line of output.split("\n")) {
+      if (!line.includes("|")) continue;
+      const cols = line.split("|").map((c) => c.trim()).filter(Boolean);
+      if (cols.length < 3 || cols[0] === "Name" || cols[0].startsWith("-")) continue;
+      if (cols[1]?.startsWith("-")) continue;
+      const rawName = cols[0]; // schema.table
+      const tableName = rawName.includes(".") ? rawName.split(".").pop()! : rawName;
+      // index-usage doesn't give individual indexes, try index-sizes instead
+    }
+  } catch { /* skip */ }
+
+  // Better: parse pg_indexes via psql if DATABASE_URL is available
+  try {
+    const dbUrl = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL;
+    if (dbUrl) {
+      // Indexes
+      const idxOut = execSync(
+        `psql "${dbUrl}" -t -A -F '|' -c "SELECT tablename, indexname, indexdef FROM pg_indexes WHERE schemaname = '${schema}' ORDER BY tablename, indexname"`,
+        { encoding: "utf-8", timeout: 15000 },
+      );
+      for (const line of idxOut.trim().split("\n")) {
+        if (!line.trim()) continue;
+        const [tableName, indexName, indexDef] = line.split("|");
+        if (!tableName || !indexName) continue;
+        const isUnique = indexDef?.includes("UNIQUE") ?? false;
+        const isPrimary = indexName.endsWith("_pkey");
+        const colMatch = indexDef?.match(/\(([^)]+)\)/);
+        indexes.push({
+          table_name: tableName, index_name: indexName,
+          columns: colMatch?.[1] || "", is_unique: isUnique,
+          is_primary: isPrimary, index_type: indexDef?.includes("btree") ? "btree" : "other",
+        });
+      }
+
+      // Enums
+      const enumOut = execSync(
+        `psql "${dbUrl}" -t -A -F '|' -c "SELECT t.typname, string_agg(e.enumlabel, ',' ORDER BY e.enumsortorder) FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid JOIN pg_namespace n ON t.typnamespace = n.oid WHERE n.nspname = '${schema}' GROUP BY t.typname ORDER BY t.typname"`,
+        { encoding: "utf-8", timeout: 15000 },
+      );
+      for (const line of enumOut.trim().split("\n")) {
+        if (!line.trim()) continue;
+        const [name, values] = line.split("|");
+        if (!name) continue;
+        enums.push({ name, enum_values: JSON.stringify(values?.split(",") || []) });
+      }
+
+      // Policies
+      const polOut = execSync(
+        `psql "${dbUrl}" -t -A -F '|' -c "SELECT tablename, policyname, cmd, roles::text, qual, with_check FROM pg_policies WHERE schemaname = '${schema}' ORDER BY tablename, policyname"`,
+        { encoding: "utf-8", timeout: 15000 },
+      );
+      for (const line of polOut.trim().split("\n")) {
+        if (!line.trim()) continue;
+        const parts = line.split("|");
+        if (parts.length < 4) continue;
+        policies.push({
+          table_name: parts[0], policy_name: parts[1],
+          command: parts[2], roles: parts[3],
+          using_expr: parts[4] || null, with_check_expr: parts[5] || null,
+        });
+      }
+
+      // Triggers
+      const trigOut = execSync(
+        `psql "${dbUrl}" -t -A -F '|' -c "SELECT event_object_table, trigger_name, event_manipulation, action_timing, action_statement FROM information_schema.triggers WHERE trigger_schema = '${schema}' ORDER BY event_object_table, trigger_name"`,
+        { encoding: "utf-8", timeout: 15000 },
+      );
+      for (const line of trigOut.trim().split("\n")) {
+        if (!line.trim()) continue;
+        const parts = line.split("|");
+        if (parts.length < 4) continue;
+        triggers.push({
+          table_name: parts[0], trigger_name: parts[1],
+          event: parts[2], timing: parts[3],
+          function_name: parts[4]?.replace(/^EXECUTE FUNCTION\s+/, "").replace(/\(\)$/, "") || "",
+          definition: parts[4] || null,
+        });
+      }
+
+      // Views
+      const viewOut = execSync(
+        `psql "${dbUrl}" -t -A -F '|' -c "SELECT viewname, definition FROM pg_views WHERE schemaname = '${schema}' ORDER BY viewname"`,
+        { encoding: "utf-8", timeout: 15000 },
+      );
+      for (const line of viewOut.trim().split("\n")) {
+        if (!line.trim()) continue;
+        const [name, ...defParts] = line.split("|");
+        if (!name) continue;
+        viewDefs.push({ name, definition: defParts.join("|") || null, column_count: 0 });
+      }
+    }
+  } catch { /* psql not available, skip pg_catalog data */ }
+
+  // Fallback: try to get data via supabase CLI inspect commands
+  if (indexes.length === 0) {
+    try {
+      const output = execSync("supabase inspect db index-sizes 2>&1", {
+        encoding: "utf-8", timeout: 30000,
+      });
+      for (const line of output.split("\n")) {
+        if (!line.includes("|")) continue;
+        const cols = line.split("|").map((c) => c.trim()).filter(Boolean);
+        if (cols.length < 2 || cols[0] === "Name" || cols[0].startsWith("-")) continue;
+        if (cols[1]?.startsWith("-")) continue;
+        const rawName = cols[0];
+        const name = rawName.includes(".") ? rawName.split(".").pop()! : rawName;
+        // We get index name and size but not which table — limited but better than nothing
+        indexes.push({
+          table_name: "", index_name: name, columns: "",
+          is_unique: false, is_primary: name.endsWith("_pkey"),
+          index_type: "unknown",
+        });
+      }
+    } catch { /* skip */ }
+  }
+
+  return { indexes, enums, policies, triggers, viewDefs };
+}
+
 export function snapshotCommand(): Command {
   return new Command("snapshot")
     .description("Snapshot database schema to local .supabase-schema/ directory for fast agent lookups")
@@ -471,6 +639,30 @@ export function snapshotCommand(): Command {
         }
 
         insertAll(db, dbTables, dbColumns, dbRels, dbFuncs);
+
+        // Fetch pg_catalog data (indexes, enums, policies, triggers, views)
+        write("  Fetching pg_catalog data... ");
+        const serviceKey = (() => {
+          try {
+            const keysJson2 = execSync(
+              `supabase projects api-keys --project-ref ${ref} -o json 2>&1`,
+              { encoding: "utf-8", timeout: 15000 },
+            );
+            const jsonMatch2 = keysJson2.match(/\[[\s\S]*?\n\]/);
+            if (!jsonMatch2) return null;
+            const keys2 = JSON.parse(jsonMatch2[0]) as Array<{ name: string; api_key: string }>;
+            return keys2.find((k) => k.name === "service_role")?.api_key || null;
+          } catch { return null; }
+        })();
+
+        const pgData = fetchPgCatalogData(serviceKey || "", ref, schema);
+        const pgTotal = pgData.indexes.length + pgData.enums.length + pgData.policies.length + pgData.triggers.length + pgData.viewDefs.length;
+        if (pgTotal > 0) {
+          insertPgCatalogData(db, pgData.indexes, pgData.enums, pgData.policies, pgData.triggers, pgData.viewDefs);
+          write(`\u2713 ${pgData.indexes.length} indexes, ${pgData.enums.length} enums, ${pgData.policies.length} policies, ${pgData.triggers.length} triggers, ${pgData.viewDefs.length} views\n`);
+        } else {
+          write("skipped (psql not available — run with DATABASE_URL for full pg_catalog data)\n");
+        }
 
         // Write metadata
         setMetadata(db, "snapshot_at", new Date().toISOString());

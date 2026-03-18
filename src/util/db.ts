@@ -51,6 +51,47 @@ CREATE TABLE IF NOT EXISTS functions (
   description TEXT
 );
 
+CREATE TABLE IF NOT EXISTS indexes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  table_name TEXT NOT NULL,
+  index_name TEXT NOT NULL,
+  columns TEXT,
+  is_unique BOOLEAN DEFAULT FALSE,
+  is_primary BOOLEAN DEFAULT FALSE,
+  index_type TEXT
+);
+
+CREATE TABLE IF NOT EXISTS enums (
+  name TEXT PRIMARY KEY,
+  enum_values TEXT
+);
+
+CREATE TABLE IF NOT EXISTS policies (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  table_name TEXT NOT NULL,
+  policy_name TEXT NOT NULL,
+  command TEXT,
+  roles TEXT,
+  using_expr TEXT,
+  with_check_expr TEXT
+);
+
+CREATE TABLE IF NOT EXISTS triggers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  table_name TEXT NOT NULL,
+  trigger_name TEXT NOT NULL,
+  event TEXT,
+  timing TEXT,
+  function_name TEXT,
+  definition TEXT
+);
+
+CREATE TABLE IF NOT EXISTS views (
+  name TEXT PRIMARY KEY,
+  definition TEXT,
+  column_count INTEGER
+);
+
 CREATE VIRTUAL TABLE IF NOT EXISTS schema_fts USING fts5(
   name,
   type,
@@ -66,6 +107,9 @@ CREATE INDEX IF NOT EXISTS idx_columns_fk ON columns(fk_table) WHERE fk_table IS
 CREATE INDEX IF NOT EXISTS idx_columns_pk ON columns(is_pk) WHERE is_pk = TRUE;
 CREATE INDEX IF NOT EXISTS idx_rels_from ON relationships(from_table);
 CREATE INDEX IF NOT EXISTS idx_rels_to ON relationships(to_table);
+CREATE INDEX IF NOT EXISTS idx_indexes_table ON indexes(table_name);
+CREATE INDEX IF NOT EXISTS idx_policies_table ON policies(table_name);
+CREATE INDEX IF NOT EXISTS idx_triggers_table ON triggers(table_name);
 `;
 
 // ─── Open / Init ───
@@ -75,6 +119,8 @@ export function openDb(schemaDir: string): Database.Database {
   const db = new Database(dbPath);
   db.pragma("journal_mode = WAL");
   db.pragma("foreign_keys = OFF");
+  // Ensure all tables exist (handles upgrades from older snapshots)
+  initSchema(db);
   return db;
 }
 
@@ -83,6 +129,14 @@ export function hasDb(schemaDir: string): boolean {
 }
 
 export function initSchema(db: Database.Database): void {
+  // Migrate: rename old 'enums' table that used reserved word 'values'
+  try {
+    const info = db.prepare("PRAGMA table_info(enums)").all() as Array<{ name: string }>;
+    if (info.some((col) => col.name === "values")) {
+      db.exec("DROP TABLE enums");
+    }
+  } catch { /* table doesn't exist yet, fine */ }
+
   db.exec(SCHEMA_SQL);
 }
 
@@ -93,6 +147,11 @@ export function clearData(db: Database.Database): void {
   db.exec("DELETE FROM functions");
   db.exec("DELETE FROM tables");
   db.exec("DELETE FROM metadata");
+  db.exec("DELETE FROM indexes");
+  db.exec("DELETE FROM enums");
+  db.exec("DELETE FROM policies");
+  db.exec("DELETE FROM triggers");
+  db.exec("DELETE FROM views");
 }
 
 export function setMetadata(db: Database.Database, key: string, value: string): void {
@@ -217,7 +276,7 @@ export interface FtsResult {
 
 export function searchFTS(db: Database.Database, query: string): FtsResult[] {
   // Escape special FTS5 characters and add prefix matching
-  const safeQuery = query.replace(/['"]/g, "").trim();
+  const safeQuery = query.replace(/['"():^*{}[\]]/g, "").replace(/[+\-~<>]/g, " ").trim();
   if (!safeQuery) return [];
 
   try {
@@ -390,4 +449,144 @@ export function getRelationshipsFor(db: Database.Database, tableName: string): {
     "SELECT from_table, from_column, to_table, to_column FROM relationships WHERE to_table = ?",
   ).all(tableName) as RelRow[];
   return { outgoing, incoming };
+}
+
+// ─── New pg_catalog Types & Helpers ───
+
+export interface IndexRow {
+  table_name: string;
+  index_name: string;
+  columns: string;
+  is_unique: boolean;
+  is_primary: boolean;
+  index_type: string;
+}
+
+export interface EnumRow {
+  name: string;
+  enum_values: string; // JSON array
+}
+
+export interface PolicyRow {
+  table_name: string;
+  policy_name: string;
+  command: string;
+  roles: string;
+  using_expr: string | null;
+  with_check_expr: string | null;
+}
+
+export interface TriggerRow {
+  table_name: string;
+  trigger_name: string;
+  event: string;
+  timing: string;
+  function_name: string;
+  definition: string | null;
+}
+
+export interface ViewRow {
+  name: string;
+  definition: string | null;
+  column_count: number;
+}
+
+export function insertPgCatalogData(
+  db: Database.Database,
+  indexes: IndexRow[],
+  enums: EnumRow[],
+  policies: PolicyRow[],
+  triggers: TriggerRow[],
+  viewDefs: ViewRow[],
+): void {
+  const insertIndex = db.prepare(
+    "INSERT INTO indexes (table_name, index_name, columns, is_unique, is_primary, index_type) VALUES (?, ?, ?, ?, ?, ?)",
+  );
+  const insertEnum = db.prepare(
+    "INSERT OR REPLACE INTO enums (name, enum_values) VALUES (?, ?)",
+  );
+  const insertPolicy = db.prepare(
+    "INSERT INTO policies (table_name, policy_name, command, roles, using_expr, with_check_expr) VALUES (?, ?, ?, ?, ?, ?)",
+  );
+  const insertTrigger = db.prepare(
+    "INSERT INTO triggers (table_name, trigger_name, event, timing, function_name, definition) VALUES (?, ?, ?, ?, ?, ?)",
+  );
+  const insertView = db.prepare(
+    "INSERT OR REPLACE INTO views (name, definition, column_count) VALUES (?, ?, ?)",
+  );
+  const insertFts = db.prepare(
+    "INSERT INTO schema_fts (name, type, parent, detail, description) VALUES (?, ?, ?, ?, ?)",
+  );
+
+  function safe(v: unknown): string | number | null {
+    if (v === undefined || v === null) return null;
+    if (typeof v === "boolean") return v ? 1 : 0;
+    if (typeof v === "number") return v;
+    return String(v);
+  }
+
+  const tx = db.transaction(() => {
+    for (const idx of indexes) {
+      insertIndex.run(safe(idx.table_name), safe(idx.index_name), safe(idx.columns), safe(idx.is_unique), safe(idx.is_primary), safe(idx.index_type));
+      insertFts.run(safe(idx.index_name), "index", safe(idx.table_name), `${idx.columns} ${idx.is_unique ? "UNIQUE" : ""}`, "");
+    }
+    for (const e of enums) {
+      insertEnum.run(safe(e.name), safe(e.enum_values));
+      insertFts.run(safe(e.name), "enum", "", safe(e.enum_values), "");
+    }
+    for (const p of policies) {
+      insertPolicy.run(safe(p.table_name), safe(p.policy_name), safe(p.command), safe(p.roles), safe(p.using_expr), safe(p.with_check_expr));
+      insertFts.run(safe(p.policy_name), "policy", safe(p.table_name), `${p.command} ${p.roles}`, safe(p.using_expr));
+    }
+    for (const t of triggers) {
+      insertTrigger.run(safe(t.table_name), safe(t.trigger_name), safe(t.event), safe(t.timing), safe(t.function_name), safe(t.definition));
+      insertFts.run(safe(t.trigger_name), "trigger", safe(t.table_name), `${t.timing} ${t.event}`, safe(t.function_name));
+    }
+    for (const v of viewDefs) {
+      insertView.run(safe(v.name), safe(v.definition), safe(v.column_count));
+      insertFts.run(safe(v.name), "view", "", `${v.column_count} columns`, safe(v.definition));
+    }
+  });
+  tx();
+}
+
+// Query helpers for new tables
+
+export function queryIndexes(db: Database.Database, tableName?: string): IndexRow[] {
+  if (tableName) {
+    return db.prepare("SELECT * FROM indexes WHERE table_name LIKE ? ORDER BY table_name, index_name").all(`%${tableName}%`) as IndexRow[];
+  }
+  return db.prepare("SELECT * FROM indexes ORDER BY table_name, index_name").all() as IndexRow[];
+}
+
+export function queryEnums(db: Database.Database, name?: string): EnumRow[] {
+  if (name) {
+    return db.prepare("SELECT name, enum_values FROM enums WHERE name LIKE ? ORDER BY name").all(`%${name}%`) as EnumRow[];
+  }
+  return db.prepare("SELECT name, enum_values FROM enums ORDER BY name").all() as EnumRow[];
+}
+
+export function queryPolicies(db: Database.Database, tableName?: string): PolicyRow[] {
+  if (tableName) {
+    return db.prepare("SELECT * FROM policies WHERE table_name LIKE ? ORDER BY table_name, policy_name").all(`%${tableName}%`) as PolicyRow[];
+  }
+  return db.prepare("SELECT * FROM policies ORDER BY table_name, policy_name").all() as PolicyRow[];
+}
+
+export function queryTriggers(db: Database.Database, tableName?: string): TriggerRow[] {
+  if (tableName) {
+    return db.prepare("SELECT * FROM triggers WHERE table_name LIKE ? ORDER BY table_name, trigger_name").all(`%${tableName}%`) as TriggerRow[];
+  }
+  return db.prepare("SELECT * FROM triggers ORDER BY table_name, trigger_name").all() as TriggerRow[];
+}
+
+export function queryViews(db: Database.Database, name?: string): ViewRow[] {
+  if (name) {
+    return db.prepare("SELECT * FROM views WHERE name LIKE ? ORDER BY name").all(`%${name}%`) as ViewRow[];
+  }
+  return db.prepare("SELECT * FROM views ORDER BY name").all() as ViewRow[];
+}
+
+export function getAllFunctions(db: Database.Database): Array<{ name: string; params: string; description: string | null }> {
+  return db.prepare("SELECT name, params, description FROM functions ORDER BY name").all() as Array<{ name: string; params: string; description: string | null }>;
 }
