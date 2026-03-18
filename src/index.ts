@@ -12,13 +12,14 @@ import { columnsCommand } from "./commands/columns.js";
 import { tableCommand } from "./commands/table.js";
 import { cronCommand } from "./commands/cron.js";
 import { approveCommand } from "./commands/approve.js";
+import { updateCommand } from "./commands/update.js";
 
 const program = new Command();
 
 program
   .name("supabase-skill")
   .description("Supabase CLI skill for AI agents. Installs comprehensive CLI instructions into CLAUDE.md with multi-environment support.")
-  .version("0.6.1");
+  .version("0.6.2");
 
 program.addCommand(installCommand());
 program.addCommand(initCommand());
@@ -32,5 +33,6 @@ program.addCommand(columnsCommand());
 program.addCommand(tableCommand());
 program.addCommand(cronCommand());
 program.addCommand(approveCommand());
+program.addCommand(updateCommand());
 
 program.parse();
