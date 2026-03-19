@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { readFileSync, existsSync } from "node:fs";
 import { createInterface } from "node:readline";
 import { readConfig } from "../util/config.js";
@@ -62,6 +62,10 @@ export function sqlCommand(): Command {
 
       // --setup mode: prompt for pgUrl and save
       if (opts.setup) {
+        if (resolved.envName === "custom") {
+          write("  Error: --setup requires a named environment. Use --prod or --stage (not --project-ref).\n");
+          process.exit(1);
+        }
         write(`\n  Configure postgres URL for ${resolved.envName.toUpperCase()} (${resolved.ref})\n`);
         write("  Get it from: Supabase Dashboard → Settings → Database → Connection string → URI\n\n");
         const url = await promptUser("  Paste connection URL (postgresql://...): ");
@@ -92,14 +96,18 @@ export function sqlCommand(): Command {
           write("  Error: URL must start with postgresql:// or postgres://\n");
           process.exit(1);
         }
-        try {
-          savePgUrl(resolved.envName, url);
-          write(`  ✓ Saved for future use.\n\n`);
-          pgUrl = url;
-        } catch (e) {
-          write(`  Error saving: ${(e as Error).message}\n`);
-          process.exit(1);
+        // Save to config if this is a named environment (not ad-hoc --project-ref)
+        if (resolved.envName !== "custom") {
+          try {
+            savePgUrl(resolved.envName, url);
+            write(`  ✓ Saved for future use.\n\n`);
+          } catch {
+            write(`  Using for this session only.\n\n`);
+          }
+        } else {
+          write(`  Using for this session only (use --stage/--prod --setup to save permanently).\n\n`);
         }
+        pgUrl = url;
       }
 
       // Determine SQL source
@@ -123,14 +131,18 @@ export function sqlCommand(): Command {
         process.exit(1);
       }
 
-      // Build search_path prefix
+      // Validate and build search_path prefix
       const schema = opts.schema || config?.schema || "public";
+      if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(schema)) {
+        write(`  Error: Invalid schema name: ${schema}\n`);
+        process.exit(1);
+      }
       const searchPathPrefix = schema !== "public"
         ? `SET search_path TO ${schema}, public;\n`
         : "";
 
-      // Build psql args
-      const psqlArgs = ["-v", "ON_ERROR_STOP=1"];
+      // Build psql args (no shell — using execFileSync)
+      const psqlArgs = [pgUrl, "-v", "ON_ERROR_STOP=1"];
       if (!opts.raw) {
         psqlArgs.push("-t", "-A");
       }
@@ -139,17 +151,18 @@ export function sqlCommand(): Command {
         let result: string;
         if (useFile) {
           // For file input, prepend search_path via -c then run file
-          const searchPathCmd = searchPathPrefix
-            ? `psql "${pgUrl}" ${psqlArgs.join(" ")} -c "${searchPathPrefix.trim()}" -f "${opts.f}"`
-            : `psql "${pgUrl}" ${psqlArgs.join(" ")} -f "${opts.f}"`;
-          result = execSync(searchPathCmd, {
+          if (searchPathPrefix) {
+            psqlArgs.push("-c", searchPathPrefix.trim());
+          }
+          psqlArgs.push("-f", opts.f!);
+          result = execFileSync("psql", psqlArgs, {
             encoding: "utf-8",
             timeout: 60000,
           });
         } else {
           // Pipe SQL via stdin (safe — no shell interpolation)
           const fullSql = searchPathPrefix + sql;
-          result = execSync(`psql "${pgUrl}" ${psqlArgs.join(" ")}`, {
+          result = execFileSync("psql", psqlArgs, {
             input: fullSql,
             encoding: "utf-8",
             timeout: 60000,

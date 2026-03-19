@@ -57,7 +57,7 @@ ${envSection}
 ### IMPORTANT: CLI Flag Reference
 - Database commands (db, migration, inspect, storage) use \`--linked\` (requires \`supabase link\` first)
 - Management commands (functions, projects, secrets, snippets) use \`--project-ref <ref>\`
-- \`supabase db execute\` does NOT exist — use REST API or psql instead
+- \`supabase db execute\` does NOT exist — use \`supabase-skill sql\` instead
 - To switch linked project: \`supabase link --project-ref <ref>\`
 
 ### Project Linking (required before db/migration/inspect/storage commands)
