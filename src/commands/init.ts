@@ -2,13 +2,24 @@ import { Command } from "commander";
 import { join } from "node:path";
 import { readFileSync, writeFileSync, existsSync, appendFileSync, mkdirSync } from "node:fs";
 import { execSync } from "node:child_process";
+import { createInterface } from "node:readline";
 import { upsertSection } from "../util/claude-md.js";
-import { readConfig } from "../util/config.js";
+import { readConfig, writeConfig } from "../util/config.js";
 import { getSkillDoc } from "./docs.js";
 import { walkthroughTemplate } from "../templates/walkthrough.js";
 
 function write(msg: string): void {
   process.stdout.write(msg);
+}
+
+function prompt(question: string): Promise<string> {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(answer.trim());
+    });
+  });
 }
 
 export function initCommand(): Command {
@@ -17,7 +28,8 @@ export function initCommand(): Command {
     .option("--skip-snapshot", "Skip schema snapshot")
     .option("--skip-approve", "Skip Claude permission approval")
     .option("--skip-cron", "Skip nightly cron setup")
-    .action((opts: { skipSnapshot?: boolean; skipApprove?: boolean; skipCron?: boolean }) => {
+    .option("--skip-sql", "Skip SQL connection setup")
+    .action(async (opts: { skipSnapshot?: boolean; skipApprove?: boolean; skipCron?: boolean; skipSql?: boolean }) => {
       const cwd = process.cwd();
       const config = readConfig();
 
@@ -33,7 +45,7 @@ export function initCommand(): Command {
       const skillDoc = getSkillDoc(config);
 
       // ─── 1. CLAUDE.md (no secrets) ───
-      write("  1/5 Writing CLAUDE.md...\n");
+      write("  1/6 Writing CLAUDE.md...\n");
       const claudeMd = join(cwd, "CLAUDE.md");
       const claudeResult = upsertSection(claudeMd, skillDoc);
       write(`    CLAUDE.md: ${claudeResult}\n`);
@@ -52,7 +64,7 @@ export function initCommand(): Command {
       write(`    .claude/commands/supabase.md: written\n`);
 
       // ─── 2. .env (secrets) ───
-      write("\n  2/5 Writing .env with API keys...\n");
+      write("\n  2/6 Writing .env with API keys...\n");
       const envPath = join(cwd, ".env");
       const envLines: string[] = ["", "# supabase-skill environments"];
 
@@ -94,9 +106,37 @@ export function initCommand(): Command {
         }
       }
 
-      // ─── 3. Snapshot ───
+      // ─── 3. SQL Connection Setup ───
+      if (!opts.skipSql) {
+        const envsMissingPgUrl = Object.entries(config.environments)
+          .filter(([, env]) => !env.pgUrl);
+        if (envsMissingPgUrl.length > 0) {
+          write("\n  3/6 SQL connection setup (for `supabase-skill sql`)...\n");
+          write("    Find connection URI in: Supabase Dashboard → Settings → Database → Connection string → URI\n\n");
+          let updated = false;
+          for (const [envName, env] of envsMissingPgUrl) {
+            const answer = await prompt(`    Postgres URL for ${envName.toUpperCase()} (${env.ref}) — or Enter to skip: `);
+            if (answer && (answer.startsWith("postgresql://") || answer.startsWith("postgres://"))) {
+              config.environments[envName].pgUrl = answer;
+              updated = true;
+              write(`    ✓ pgUrl saved for ${envName.toUpperCase()}\n`);
+            } else if (answer) {
+              write(`    ✗ Skipped (must start with postgresql:// or postgres://)\n`);
+            } else {
+              write(`    Skipped — configure later with \`supabase-skill sql --setup\`\n`);
+            }
+          }
+          if (updated) writeConfig(config);
+        } else {
+          write("\n  3/6 SQL connections: ✓ already configured\n");
+        }
+      } else {
+        write("\n  3/6 SQL setup: skipped\n");
+      }
+
+      // ─── 4. Snapshot ───
       if (!opts.skipSnapshot) {
-        write("\n  3/5 Snapshotting schema...\n");
+        write("\n  4/6 Snapshotting schema...\n");
         const ref = config.environments[config.defaultEnv]?.ref ||
           Object.values(config.environments)[0]?.ref;
         if (ref) {
@@ -107,31 +147,31 @@ export function initCommand(): Command {
           }
         }
       } else {
-        write("\n  3/5 Snapshot: skipped\n");
+        write("\n  4/6 Snapshot: skipped\n");
       }
 
-      // ─── 4. Approve ───
+      // ─── 5. Approve ───
       if (!opts.skipApprove) {
-        write("\n  4/5 Approving Claude permissions...\n");
+        write("\n  5/6 Approving Claude permissions...\n");
         try {
           execSync("supabase-skill approve", { stdio: "inherit", cwd });
         } catch {
           write("    ✗ Approve failed — run `supabase-skill approve` manually\n");
         }
       } else {
-        write("\n  4/5 Approve: skipped\n");
+        write("\n  5/6 Approve: skipped\n");
       }
 
-      // ─── 5. Cron ───
+      // ─── 6. Cron ───
       if (!opts.skipCron) {
-        write("\n  5/5 Setting up nightly cron...\n");
+        write("\n  6/6 Setting up nightly cron...\n");
         try {
           execSync("supabase-skill cron", { stdio: "inherit", cwd });
         } catch {
           write("    ✗ Cron failed — run `supabase-skill cron` manually\n");
         }
       } else {
-        write("\n  5/5 Cron: skipped\n");
+        write("\n  6/6 Cron: skipped\n");
       }
 
       write("\n  ── Project ready! ──\n\n");
