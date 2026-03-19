@@ -206,6 +206,24 @@ export function installCommand(): Command {
       }
       write("\n");
 
+      // ─── Step 4b: Postgres connection URLs ───
+      if (isInteractive && Object.keys(config.environments).length > 0) {
+        write("  Step 4b/5: Postgres connection URLs (for `supabase-skill sql`)\n");
+        write("    Find in: Supabase Dashboard → Settings → Database → Connection string → URI\n\n");
+        for (const env of Object.keys(config.environments)) {
+          const answer = await prompt(`    Postgres URL for ${env.toUpperCase()} (or press Enter to skip): `);
+          if (answer && (answer.startsWith("postgresql://") || answer.startsWith("postgres://"))) {
+            config.environments[env].pgUrl = answer;
+            write(`    ✓ pgUrl saved for ${env.toUpperCase()}\n`);
+          } else if (answer) {
+            write(`    ✗ Skipped (must start with postgresql:// or postgres://)\n`);
+          } else {
+            write(`    Skipped — configure later with \`supabase-skill sql --setup\`\n`);
+          }
+        }
+        write("\n");
+      }
+
       // ─── Step 5: Write Everything ───
       write("  Step 5/5: Writing configuration\n");
 

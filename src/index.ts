@@ -22,13 +22,14 @@ import { enumsCommand } from "./commands/enums.js";
 import { policiesCommand } from "./commands/policies.js";
 import { triggersCommand } from "./commands/triggers.js";
 import { viewsCommand } from "./commands/views.js";
+import { sqlCommand } from "./commands/sql.js";
 
 const program = new Command();
 
 program
   .name("supabase-skill")
   .description("Supabase CLI skill for AI agents. Installs comprehensive CLI instructions into CLAUDE.md with multi-environment support.")
-  .version("0.8.0");
+  .version("0.9.0");
 
 program.addCommand(installCommand());
 program.addCommand(initCommand());
@@ -52,5 +53,6 @@ program.addCommand(enumsCommand());
 program.addCommand(policiesCommand());
 program.addCommand(triggersCommand());
 program.addCommand(viewsCommand());
+program.addCommand(sqlCommand());
 
 program.parse();
