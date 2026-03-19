@@ -65,7 +65,34 @@ ${envSection}
 - Must run from a directory with \`supabase/config.toml\` (or run \`supabase init\` first)
 - Only one project can be linked at a time per directory
 
-### Data Operations (REST API — no \`supabase db execute\`)
+### SQL Execution (via psql)
+Run arbitrary SQL against any configured environment. Connection is pre-configured — no linking or env vars needed.
+
+**When to use what:**
+- **Schema exploration** (table structure, columns, FKs, functions): use \`supabase-skill context/table/search/columns\` — instant, reads local cache
+- **Data queries** (SELECT, INSERT, UPDATE, DELETE, ad-hoc SQL): use \`supabase-skill sql\` — runs live against the database
+- **DDL / migrations**: use \`supabase migration\` workflow (not \`sql\`)
+
+**Commands:**
+- \`supabase-skill sql -c "SELECT count(*) FROM table_name"\` — run SQL on stage (default)
+- \`supabase-skill sql --prod -c "SELECT ..."\` — run SQL on production
+- \`supabase-skill sql -f path/to/file.sql\` — execute SQL file
+- \`echo "SELECT 1" | supabase-skill sql\` — pipe SQL via stdin
+- \`supabase-skill sql -c "..." --raw\` — raw unformatted psql output
+- \`supabase-skill sql --setup\` — configure postgres connection URL
+- \`supabase-skill sql --prod --setup\` — configure prod connection URL
+
+**Environment targeting:**
+- Default is always **stage** — safe for exploration and testing
+- Use \`--prod\` only when user explicitly asks for production data
+- Use \`--project-ref <ref>\` to target a specific project ref directly
+
+**Notes:**
+- Connection strings are stored in config (set during \`supabase-skill install\` or first \`sql\` run)
+- If you get a connection error, tell the user to run \`supabase-skill sql --setup\` to configure pgUrl
+- Schema is auto-set to the configured schema (e.g., \`<schema>\`) via search_path
+
+### Data Operations (REST API)
 Load env vars first: \`source .env\` or \`export $(grep -v '^#' .env | xargs)\`
 Header shorthand: \`-H "apikey: $KEY" -H "Authorization: Bearer $KEY"\`
 GET uses \`Accept-Profile: <schema>\`, POST/PATCH/DELETE use \`Content-Profile: <schema>\`
@@ -97,9 +124,6 @@ GET uses \`Accept-Profile: <schema>\`, POST/PATCH/DELETE use \`Content-Profile: 
 
 **Call RPC function (POST)**:
 - \`curl -s "$URL/rest/v1/rpc/<function>" -X POST -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Profile: <schema>" -H "Content-Type: application/json" -d '{"param": "value"}'\`
-
-**Direct SQL** (if psql available):
-- \`psql "$DATABASE_URL" -c "SELECT 1"\`
 
 ### Migrations (uses --linked, NOT --project-ref)
 - \`supabase migration new <name>\` — create empty migration file (local only)

@@ -8,6 +8,7 @@ export interface Environment {
   anonKey?: string;
   serviceKey?: string;
   dbUrl?: string;
+  pgUrl?: string;
 }
 
 export interface SkillConfig {

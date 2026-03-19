@@ -22,6 +22,7 @@ import { enumsCommand } from "./commands/enums.js";
 import { policiesCommand } from "./commands/policies.js";
 import { triggersCommand } from "./commands/triggers.js";
 import { viewsCommand } from "./commands/views.js";
+import { sqlCommand } from "./commands/sql.js";
 
 const program = new Command();
 
@@ -52,5 +53,6 @@ program.addCommand(enumsCommand());
 program.addCommand(policiesCommand());
 program.addCommand(triggersCommand());
 program.addCommand(viewsCommand());
+program.addCommand(sqlCommand());
 
 program.parse();

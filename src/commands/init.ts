@@ -139,6 +139,7 @@ export function initCommand(): Command {
       write("    ✓ API keys in .env only (never in CLAUDE.md)\n");
       write("    ✓ .env + .supabase-schema/ gitignored\n");
       write("    ✓ Claude read commands pre-approved (no prompts)\n");
+      write("    ✓ SQL commands pre-approved (supabase-skill sql)\n");
       write("    ✓ Write commands still require approval\n\n");
     });
 }
